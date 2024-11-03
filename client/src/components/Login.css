@@ -1,0 +1,65 @@
+.login-container {
+    max-width: 400px;
+    margin: auto;
+    background-color: #f5f7fa;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-input {
+    width: 100%;
+    margin: 10px 0;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #666;
+}
+
+.toggle-password:hover {
+    color: #333;
+}
+
+.login-button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 12px 20px; /* הגדלת padding כדי לתת יותר גודל לכפתור */
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto; /* קובע שהכפתור יתפוס רק את גודל התוכן שלו */
+    margin-top: 10px;
+    transition: background-color 0.3s ease;
+    display: inline-block; /* מצמצם את השטח שהוא תופס */
+}
+
+
+.login-button:hover {
+    background-color: #0056b3;
+}
