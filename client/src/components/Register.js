@@ -7,6 +7,7 @@ import './Register.css';
 
 function Register() {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' });
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -17,15 +18,19 @@ function Register() {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5000/api/auth/register', formData);
-
-            // שמירת שם המשתמש ב-localStorage
-            localStorage.setItem('username', response.data.user.username);
-
-            // מעבר לדשבורד
+            const { user_id, username } = response.data.user; // קבלת user_id מהשרת
+            
+            localStorage.setItem('userId', user_id); // שמירת user_id ב-localStorage
+            localStorage.setItem('username', username); // שמירת שם המשתמש ב-localStorage
+            
             navigate('/dashboard');
         } catch (error) {
             alert('Error registering: ' + (error.response?.data?.message || error.message));
         }
+    };
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
     };
 
     return (
@@ -71,15 +76,21 @@ function Register() {
                 onChange={handleChange}
                 required
             />
-            <TextField
-                label="סיסמה"
-                variant="outlined"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-            />
+            <div className="password-container">
+                <TextField
+                    label="סיסמה"
+                    variant="outlined"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="login-input"
+                />
+                <span onClick={togglePasswordVisibility} className="toggle-password material-symbols-outlined">
+                    {showPassword ? 'visibility' : 'visibility_off'}
+                </span>
+            </div>
             <button type="submit" className="submit-button">הירשם</button>
         </Box>
     );

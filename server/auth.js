@@ -4,36 +4,38 @@ import connection from './db/connection.js'; // ייבוא החיבור לבסי
 const router = express.Router(); // יצירת נתיב (router) לניהול בקשות API
 
 // רישום משתמש
-router.post('/register', (req, res) => { // מסלול POST לרישום משתמשים חדשים
-    const { firstName, lastName, username, email, password } = req.body; // קבלת פרטי המשתמש מתוך גוף הבקשה
+router.post('/register', (req, res) => {
+    const { firstName, lastName, username, email, password } = req.body;
 
-    const sql = `INSERT INTO Users (first_name, last_name, username, email, password) VALUES (?, ?, ?, ?, ?)`; // שאילתה להוספת המשתמש לטבלת Users
-    const values = [firstName, lastName, username, email, password]; // ערכי המשתמש (כדי למלא את מקומות הסימנים בשאילתה)
+    const sql = `INSERT INTO Users (first_name, last_name, username, email, password) VALUES (?, ?, ?, ?, ?)`;
+    const values = [firstName, lastName, username, email, password];
 
-    connection.query(sql, values, (err, results) => { // הרצת השאילתה במסד הנתונים
-        if (err) return res.status(500).json({ error: err.message }); // טיפול בשגיאות: החזרת שגיאה 500 עם הודעה במידה ויש כזו
-        res.status(201).json({ // אם ההוספה הצליחה
+    connection.query(sql, values, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(201).json({
             message: 'User registered successfully',
-            user: { username } // החזרת שם המשתמש שנרשם כתשובה
+            user: { user_id: results.insertId, username } // החזרת user_id ו-username
         });
     });
 });
 
+
 // התחברות משתמש
-router.post('/login', (req, res) => { // מסלול POST לכניסה של משתמש קיים
-    const { username, password } = req.body; // קבלת שם משתמש וסיסמה מתוך גוף הבקשה
+router.post('/login', (req, res) => {
+    const { username, password } = req.body;
 
-    const sql = `SELECT * FROM Users WHERE username = ? AND password = ?`; // שאילתה למציאת משתמש על פי שם משתמש וסיסמה
-    const values = [username, password]; // הכנסת הנתונים שסופקו לשאילתה
+    const sql = `SELECT user_id, username FROM Users WHERE username = ? AND password = ?`; // מחזיר רק את user_id ו-username
+    const values = [username, password];
 
-    connection.query(sql, values, (err, results) => { // הרצת השאילתה במסד הנתונים
-        if (err) return res.status(500).json({ error: err.message }); // טיפול בשגיאות: החזרת שגיאה 500 עם הודעה במידה ויש כזו
-        if (results.length > 0) { // אם נמצא משתמש עם הפרטים שסופקו
-            res.json({ message: 'Login successful', user: results[0] }); // החזרת תגובה עם פרטי המשתמש
-        } else { // אם לא נמצא משתמש עם הפרטים שסופקו
-            res.status(401).json({ message: 'Invalid username or password' }); // החזרת תגובה של שגיאה עם קוד 401
+    connection.query(sql, values, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) {
+            const user = results[0]; // תוצאה ראשונה מהשאילתה
+            res.json({ message: 'Login successful', user }); // החזרת userId ו-username בלבד
+        } else {
+            res.status(401).json({ message: 'Invalid username or password' });
         }
     });
 });
 
-export default router; // ייצוא הנתיב (router) כך שניתן יהיה להשתמש בו בקבצים אחרים
+export default router;

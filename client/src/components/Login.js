@@ -18,7 +18,9 @@ function Login() {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
-            localStorage.setItem('username', response.data.user.username);
+            const { user_id, username } = response.data.user; // קבלת user_id מהשרת
+            localStorage.setItem('username', username); // שמירת שם המשתמש ב-localStorage
+            localStorage.setItem('userId', user_id); // שמירת user_id ב-localStorage
             navigate('/dashboard');
         } catch (error) {
             alert('Error logging in: ' + (error.response?.data?.message || error.message));

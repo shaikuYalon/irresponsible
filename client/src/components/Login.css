@@ -34,11 +34,12 @@ h2 {
 
 .toggle-password {
     position: absolute;
-    right: 10px;
-    top: 50%;
+    left: 10px;
+    top: 50%; /* ממקם את האייקון קרוב יותר למרכז השדה */
     transform: translateY(-50%);
     cursor: pointer;
     color: #666;
+    font-size: 24px; /* נותן גודל מתאים לאייקון */
 }
 
 .toggle-password:hover {
