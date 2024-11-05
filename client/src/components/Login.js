@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import './Login.css';
+import styles from './Login.module.css';
 
 function Login() {
     const [formData, setFormData] = useState({ username: '', password: '' });
@@ -18,9 +18,9 @@ function Login() {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
-            const { user_id, username } = response.data.user; // קבלת user_id מהשרת
-            localStorage.setItem('username', username); // שמירת שם המשתמש ב-localStorage
-            localStorage.setItem('userId', user_id); // שמירת user_id ב-localStorage
+            const { user_id, username } = response.data.user;
+            localStorage.setItem('username', username);
+            localStorage.setItem('userId', user_id);
             navigate('/dashboard');
         } catch (error) {
             alert('Error logging in: ' + (error.response?.data?.message || error.message));
@@ -35,7 +35,7 @@ function Login() {
         <Box
             component="form"
             onSubmit={handleSubmit}
-            className="login-container"
+            className={styles.loginContainer}
             sx={{ '& > :not(style)': { m: 1, width: '100%' } }}
             noValidate
             autoComplete="off"
@@ -49,9 +49,9 @@ function Login() {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="login-input"
+                className={styles.loginInput}
             />
-            <div className="password-container">
+            <div className={styles.passwordContainer}>
                 <TextField
                     id="password"
                     label="סיסמה"
@@ -61,13 +61,13 @@ function Login() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="login-input"
+                    className={styles.loginInput}
                 />
-                <span onClick={togglePasswordVisibility} className="toggle-password material-symbols-outlined">
+                <span onClick={togglePasswordVisibility} className={`${styles.togglePassword} material-symbols-outlined`}>
                     {showPassword ? 'visibility' : 'visibility_off'}
                 </span>
             </div>
-            <button type="submit" className="login-button">התחבר</button>
+            <button type="submit" className={styles.loginButton}>התחבר</button>
         </Box>
     );
 }

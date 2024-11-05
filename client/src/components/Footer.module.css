@@ -1,0 +1,27 @@
+.footer {
+    background-color: #f8f9fa;
+    padding: 10px 0;
+    text-align: center;
+    width: 100%;
+    color: #6c757d;
+    font-size: 0.9em;
+    box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+}
+
+.footerLinks {
+    margin-bottom: 8px;
+}
+
+.footerLinks a {
+    margin: 0 10px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.footerLinks a:hover {
+    text-decoration: underline;
+}
+
+.footer p {
+    margin: 0;
+}

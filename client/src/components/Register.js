@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import './Register.css';
+import styles from './Register.module.css';
 
 function Register() {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' });
@@ -18,10 +18,10 @@ function Register() {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5000/api/auth/register', formData);
-            const { user_id, username } = response.data.user; // קבלת user_id מהשרת
+            const { user_id, username } = response.data.user;
             
-            localStorage.setItem('userId', user_id); // שמירת user_id ב-localStorage
-            localStorage.setItem('username', username); // שמירת שם המשתמש ב-localStorage
+            localStorage.setItem('userId', user_id);
+            localStorage.setItem('username', username);
             
             navigate('/dashboard');
         } catch (error) {
@@ -37,7 +37,7 @@ function Register() {
         <Box
             component="form"
             onSubmit={handleSubmit}
-            className="form-container"
+            className={styles.formContainer}
             sx={{ '& > :not(style)': { m: 1, width: '100%' } }}
             noValidate
             autoComplete="off"
@@ -76,7 +76,7 @@ function Register() {
                 onChange={handleChange}
                 required
             />
-            <div className="password-container">
+            <div className={styles.passwordContainer}>
                 <TextField
                     label="סיסמה"
                     variant="outlined"
@@ -85,13 +85,12 @@ function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="login-input"
                 />
-                <span onClick={togglePasswordVisibility} className="toggle-password material-symbols-outlined">
+                <span onClick={togglePasswordVisibility} className={`${styles.togglePassword} material-symbols-outlined`}>
                     {showPassword ? 'visibility' : 'visibility_off'}
                 </span>
             </div>
-            <button type="submit" className="submit-button">הירשם</button>
+            <button type="submit" className={styles.submitButton}>הירשם</button>
         </Box>
     );
 }

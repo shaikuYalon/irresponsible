@@ -1,4 +1,4 @@
-.login-container {
+.loginContainer {
     max-width: 400px;
     margin: auto;
     background-color: #f5f7fa;
@@ -14,53 +14,52 @@ h2 {
     color: #333;
 }
 
-.login-form {
+.loginForm {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.login-input {
+.loginInput {
     width: 100%;
     margin: 10px 0;
     font-size: 16px;
     box-sizing: border-box;
 }
 
-.password-container {
+.passwordContainer {
     position: relative;
     width: 100%;
 }
 
-.toggle-password {
+.togglePassword {
     position: absolute;
     left: 10px;
-    top: 50%; /* ממקם את האייקון קרוב יותר למרכז השדה */
+    top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
     color: #666;
-    font-size: 24px; /* נותן גודל מתאים לאייקון */
+    font-size: 24px;
 }
 
-.toggle-password:hover {
+.togglePassword:hover {
     color: #333;
 }
 
-.login-button {
+.loginButton {
     background-color: #007bff;
     color: #fff;
     border: none;
-    padding: 12px 20px; /* הגדלת padding כדי לתת יותר גודל לכפתור */
+    padding: 12px 20px;
     font-size: 16px;
     border-radius: 4px;
     cursor: pointer;
-    width: auto; /* קובע שהכפתור יתפוס רק את גודל התוכן שלו */
+    width: auto;
     margin-top: 10px;
     transition: background-color 0.3s ease;
-    display: inline-block; /* מצמצם את השטח שהוא תופס */
+    display: inline-block;
 }
 
-
-.login-button:hover {
+.loginButton:hover {
     background-color: #0056b3;
 }

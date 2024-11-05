@@ -1,6 +1,5 @@
-// Contact.js
 import React, { useState } from 'react';
-import './Contact.css';
+import styles from './Contact.module.css';
 
 function Contact() {
     const [formData, setFormData] = useState({
@@ -18,13 +17,13 @@ function Contact() {
         // כאן אפשר להוסיף את הלוגיקה לשליחת המייל
         console.log('Form submitted:', formData);
         alert('ההודעה נשלחה בהצלחה!');
-        setFormData({ name: '', email: '', message: '' }); // איפוס השדות אחרי השליחה
+        setFormData({ name: '', email: '', message: '' });
     };
 
     return (
-        <div className="contact-page">
+        <div className={styles.contactPage}>
             <h2>צור קשר</h2>
-            <form onSubmit={handleSubmit} className="contact-form">
+            <form onSubmit={handleSubmit} className={styles.contactForm}>
                 <input
                     type="text"
                     name="name"
@@ -48,7 +47,7 @@ function Contact() {
                     onChange={handleChange}
                     required
                 />
-                <button type="submit" className="submit-button">שלח</button>
+                <button type="submit" className={styles.submitButton}>שלח</button>
             </form>
         </div>
     );

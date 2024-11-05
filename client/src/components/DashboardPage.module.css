@@ -1,27 +1,31 @@
-.dashboard-page {
+.dashboardPage {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px;
 }
 
-.dashboard-header h2 {
+.dashboardHeader {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.dashboardHeader h2 {
     margin-bottom: 10px;
     color: #333;
 }
 
-.dashboard-header p {
-    margin-bottom: 20px;
+.dashboardHeader p {
     color: #666;
 }
 
-.dashboard-links {
+.dashboardLinks {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.dashboard-button {
+.dashboardButton {
     width: 200px;
     padding: 10px;
     font-size: 16px;
@@ -33,14 +37,15 @@
     cursor: pointer;
 }
 
-.dashboard-button:hover {
+.dashboardButton:hover {
     background-color: #0056b3;
 }
 
-.logout-button {
+/* אם נדרש כפתור התנתקות */
+.logoutButton {
     background-color: #dc3545;
 }
 
-.logout-button:hover {
+.logoutButton:hover {
     background-color: #c82333;
 }

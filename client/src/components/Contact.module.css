@@ -1,5 +1,4 @@
-/* Contact.css */
-.contact-page {
+.contactPage {
     max-width: 600px;
     margin: auto;
     text-align: center;
@@ -9,20 +8,20 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.contact-page h2 {
+.contactPage h2 {
     font-size: 24px;
     margin-bottom: 20px;
     color: #333;
 }
 
-.contact-form {
+.contactForm {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.contact-form input,
-.contact-form textarea {
+.contactForm input,
+.contactForm textarea {
     padding: 10px;
     font-size: 16px;
     border: 1px solid #ddd;
@@ -31,12 +30,12 @@
     box-sizing: border-box;
 }
 
-.contact-form textarea {
+.contactForm textarea {
     height: 100px;
     resize: none;
 }
 
-.submit-button {
+.submitButton {
     background-color: #4CAF50;
     color: #fff;
     border: none;
@@ -47,6 +46,6 @@
     transition: background-color 0.3s ease;
 }
 
-.submit-button:hover {
+.submitButton:hover {
     background-color: #43a047;
 }

@@ -1,7 +1,6 @@
-// HomePage.js
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './HomePage.css';
+import styles from './HomePage.module.css';
 
 function HomePage() {
     const navigate = useNavigate();
@@ -15,21 +14,17 @@ function HomePage() {
     };
 
     const goToContact = () => {
-        navigate('/contact'); // ניתוב לדף יצירת קשר
+        navigate('/contact');
     };
 
     return (
-        <div className="home-page">
-            <header className="home-header">
+        <div className={styles.homePage}>
+            <header className={styles.homeHeader}>
                 <h1>Irresponsible</h1>
                 <p>ניהול אחריות שלא הכרתם!</p>
-                <button className="register-button" onClick={goToRegister}>הרשמה</button>
-                <button className="login-button" onClick={goToLogin}>משתמש קיים</button>
+                <button className={styles.registerButton} onClick={goToRegister}>הרשמה</button>
+                <button className={styles.loginButton} onClick={goToLogin}>משתמש קיים</button>
             </header>
-
-            <footer className="footer">
-                <a href="#about">אודות</a> | <button className="link-button" onClick={goToContact}>צור קשר</button>
-            </footer>
         </div>
     );
 }
