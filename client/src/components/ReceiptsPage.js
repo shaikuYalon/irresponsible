@@ -21,6 +21,7 @@ function ReceiptsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingReminder, setIsAddingReminder] = useState(false);
   const [editReceiptId, setEditReceiptId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchReceipts = async () => {
     try {
@@ -74,6 +75,9 @@ function ReceiptsPage() {
     setShowReminders(!showReminders);
     setShowReceipts(false);
     setShowAddForm(false);
+    if (receipts.length === 0) {
+      fetchReceipts();
+    }
   };
 
   const addOrUpdateReceipt = async () => {
@@ -123,6 +127,9 @@ function ReceiptsPage() {
         reminderDaysBefore: newReceipt.reminderDaysBefore,
       });
       console.log("Reminder added successfully");
+
+      // Refresh receipts immediately after adding reminder
+      fetchReceipts();
     } catch (error) {
       console.error("Error adding reminder:", error);
     }
@@ -217,8 +224,8 @@ function ReceiptsPage() {
                     </td>
                     <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
                     <td>
-                      <button onClick={() => handleEditClick(receipt)}>עריכה</button>
-                      <button onClick={() => handleDeleteClick(receipt)}>מחיקה</button>
+                      <button onClick={() => handleEditClick(receipt)}>ערוך</button>
+                      <button onClick={() => handleDeleteClick(receipt)}>מחק</button>
                       {!receipt.reminder_days_before && (
                         <button onClick={() => handleAddReminderClick(receipt.receipt_id)}>הוסף תזכורת</button>
                       )}
@@ -237,13 +244,18 @@ function ReceiptsPage() {
           <ul>
             {receipts
               .filter((receipt) => receipt.reminder_days_before)
-              .map((receipt) => (
-                <li key={receipt.receipt_id}>
-                  {`${receipt.product_name} - תזכורת ${receipt.reminder_days_before} ימים לפני תום האחריות`}
-                  <button onClick={() => handleEditClick(receipt)}>ערוך</button>
-                  <button onClick={() => handleDeleteClick(receipt)}>מחק</button>
-                </li>
-              ))}
+              .map((receipt) => {
+                const reminderDate = new Date(new Date(receipt.warranty_expiration) - receipt.reminder_days_before * 24 * 60 * 60 * 1000);
+                return (
+                  <li key={receipt.receipt_id} className={styles.reminderItem}>
+                    <span>{`ב-${reminderDate.toLocaleDateString()} תתקבל תזכורת על כך שנותרו ${receipt.reminder_days_before} ימים עד סיום האחריות על ${receipt.product_name}`}</span>
+                    <div className={styles.buttonGroup}>
+                      <button onClick={() => handleEditClick(receipt)}>ערוך</button>
+                      <button onClick={() => handleDeleteClick(receipt)}>מחק</button>
+                    </div>
+                  </li>
+                );
+              })}
           </ul>
         </div>
       )}

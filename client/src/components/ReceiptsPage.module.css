@@ -1,7 +1,7 @@
 .actionButton {
     margin: 0 10px; /* מוסיף ריווח של 10 פיקסלים מכל צד של הכפתור */
     padding: 10px 20px;
-    background-color: #ff4d4f;
+    background-color: #22a829;
     color: white;
     border: none;
     border-radius: 5px;
@@ -10,13 +10,20 @@
 }
 
 .actionButton:hover {
-    background-color: #d9363e;
+    background-color: #27bc10;
 }
 
 
 .tableContainer {
     padding: 0 20px; /* מרווח של 20px משני הצדדים */
 }
+
+.buttonGroup {
+    display: flex;
+    gap: 10px; /* Adjust the gap to control the spacing between buttons */
+    
+  }
+  
 
 .receiptsTable {
     width: 100%;
@@ -67,3 +74,4 @@
     background-color: #fff;
     border-radius: 5px;
 }
+
