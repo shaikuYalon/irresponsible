@@ -13,7 +13,7 @@ function ReceiptsPage() {
     productName: "",
     warrantyExpiration: "",
     image: null,
-    reminderDaysBefore: null,
+    reminderDaysBefore: "",
   });
   const [showReceipts, setShowReceipts] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -66,7 +66,7 @@ function ReceiptsPage() {
       productName: "",
       warrantyExpiration: "",
       image: null,
-      reminderDaysBefore: null,
+      reminderDaysBefore: "",
     });
   };
 
@@ -77,6 +77,12 @@ function ReceiptsPage() {
   };
 
   const addOrUpdateReceipt = async () => {
+    if (isAddingReminder) {
+      addReminder(editReceiptId);
+      setShowAddForm(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("userId", newReceipt.userId || "");
     formData.append("categoryId", newReceipt.categoryId || "");
@@ -95,15 +101,30 @@ function ReceiptsPage() {
         await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        console.log("Receipt updated successfully");
       } else {
-        await axios.put("http://localhost:5000/api/receipts", formData, {
+        await axios.post("http://localhost:5000/api/receipts", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        console.log("Receipt added successfully");
       }
       setShowAddForm(false);
       fetchReceipts();
     } catch (error) {
       console.error("Error adding or updating receipt:", error);
+    }
+  };
+
+  const addReminder = async (receiptId) => {
+    try {
+      await axios.post("http://localhost:5000/api/reminders", {
+        userId: JSON.parse(localStorage.getItem("userId")),
+        receiptId: receiptId,
+        reminderDaysBefore: newReceipt.reminderDaysBefore,
+      });
+      console.log("Reminder added successfully");
+    } catch (error) {
+      console.error("Error adding reminder:", error);
     }
   };
 
@@ -119,7 +140,7 @@ function ReceiptsPage() {
       productName: receipt.product_name,
       warrantyExpiration: new Date(receipt.warranty_expiration).toISOString().split("T")[0],
       image: null,
-      reminderDaysBefore: receipt.reminder_days_before || null,
+      reminderDaysBefore: receipt.reminder_days_before || "",
     });
     setShowAddForm(true);
     setShowReceipts(false);
@@ -150,65 +171,64 @@ function ReceiptsPage() {
       <h2>ניהול קבלות ותזכורות</h2>
 
       <div className={styles.actionButtons}>
-  <button className={styles.actionButton} onClick={toggleReceipts}>
-    {showReceipts ? "הסתר קבלות" : "הצגת כל הקבלות"}
-  </button>
-  <button className={styles.actionButton} onClick={toggleAddForm}>
-    {showAddForm ? "ביטול הוספת קבלה" : "הוספת קבלה חדשה"}
-  </button>
-  <button className={styles.actionButton} onClick={toggleReminders}>
-    {showReminders ? "הסתר תזכורות" : "הצגת כל התזכורות"}
-  </button>
-</div>
-
+        <button className={styles.actionButton} onClick={toggleReceipts}>
+          {showReceipts ? "הסתר קבלות" : "הצגת כל הקבלות"}
+        </button>
+        <button className={styles.actionButton} onClick={toggleAddForm}>
+          {showAddForm ? "ביטול הוספת קבלה" : "הוספת קבלה חדשה"}
+        </button>
+        <button className={styles.actionButton} onClick={toggleReminders}>
+          {showReminders ? "הסתר תזכורות" : "הצגת כל התזכורות"}
+        </button>
+      </div>
 
       {showReceipts && (
-       <div className={styles.tableContainer}>
-       <table className={styles.receiptsTable}>
-         <thead>
-           <tr>
-             <th>חנות</th>
-             <th>מוצר</th>
-             <th>תאריך רכישה</th>
-             <th>תוקף אחריות</th>
-             <th>תמונה</th>
-             <th>תזכורת</th>
-             <th>פעולות</th>
-           </tr>
-         </thead>
-         <tbody>
-           {receipts.length === 0 ? (
-             <tr>
-               <td colSpan="7" className={styles.noReceiptsMessage}>אין קבלות שמורות</td>
-             </tr>
-           ) : (
-             receipts.map((receipt) => (
-               <tr key={receipt.receipt_id}>
-                 <td>{receipt.store_name}</td>
-                 <td>{receipt.product_name}</td>
-                 <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
-                 <td>{new Date(receipt.warranty_expiration).toLocaleDateString()}</td>
-                 <td>
-                   {receipt.image_path && (
-                     <a href={`http://localhost:5000/${receipt.image_path}`} target="_blank" rel="noopener noreferrer">
-                       הצג תמונה
-                     </a>
-                   )}
-                 </td>
-                 <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
-                 <td>
-                   <button onClick={() => handleEditClick(receipt)}>עריכה</button>
-                   <button onClick={() => handleDeleteClick(receipt)}>מחיקה</button>
-                   {!receipt.reminder_days_before && (
-                     <button onClick={() => handleAddReminderClick(receipt.receipt_id)}>הוסף תזכורת</button>
-                   )}
-                 </td>
-               </tr>
-             ))
-           )}
-         </tbody>
-       </table>
-     </div>
+        <div className={styles.tableContainer}>
+          <table className={styles.receiptsTable}>
+            <thead>
+              <tr>
+                <th>חנות</th>
+                <th>מוצר</th>
+                <th>תאריך רכישה</th>
+                <th>תוקף אחריות</th>
+                <th>תמונה</th>
+                <th>תזכורת</th>
+                <th>פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receipts.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className={styles.noReceiptsMessage}>אין קבלות שמורות</td>
+                </tr>
+              ) : (
+                receipts.map((receipt) => (
+                  <tr key={receipt.receipt_id}>
+                    <td>{receipt.store_name}</td>
+                    <td>{receipt.product_name}</td>
+                    <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
+                    <td>{new Date(receipt.warranty_expiration).toLocaleDateString()}</td>
+                    <td>
+                      {receipt.image_path && (
+                        <a href={`http://localhost:5000/${receipt.image_path}`} target="_blank" rel="noopener noreferrer">
+                          הצג תמונה
+                        </a>
+                      )}
+                    </td>
+                    <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
+                    <td>
+                      <button onClick={() => handleEditClick(receipt)}>עריכה</button>
+                      <button onClick={() => handleDeleteClick(receipt)}>מחיקה</button>
+                      {!receipt.reminder_days_before && (
+                        <button onClick={() => handleAddReminderClick(receipt.receipt_id)}>הוסף תזכורת</button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {showReminders && (
@@ -283,6 +303,15 @@ function ReceiptsPage() {
                 placeholder="תמונה"
                 onChange={(e) => setNewReceipt({ ...newReceipt, image: e.target.files[0] })}
               />
+              <select
+                value={newReceipt.reminderDaysBefore || ""}
+                onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value })}
+              >
+                <option value="">בחר תזכורת</option>
+                <option value="2">יומיים לפני</option>
+                <option value="7">שבוע לפני</option>
+                <option value="14">שבועיים לפני</option>
+              </select>
             </>
           )}
           <button onClick={addOrUpdateReceipt}>
@@ -290,7 +319,6 @@ function ReceiptsPage() {
           </button>
         </div>
       )}
-
     </div>
   );
 }

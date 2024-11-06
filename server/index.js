@@ -69,12 +69,24 @@ app.get('/api/receipts', (req, res) => {
     });
 });
 
-// הוספת קבלה עם קובץ
+// הוספת קבלה עם קובץ כולל לוגים לבדיקת reminderDaysBefore
 app.post('/api/receipts', upload.single('image'), (req, res) => {
-    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration } = req.body;
+    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
     const imagePath = req.file ? req.file.path : null;
-    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    connection.query(sql, [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath], (err) => {
+
+    console.log("Received data for new receipt:", {
+        userId,
+        categoryId,
+        storeName,
+        purchaseDate,
+        productName,
+        warrantyExpiration,
+        imagePath,
+        reminderDaysBefore
+    });
+
+    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path, reminder_days_before) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    connection.query(sql, [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, reminderDaysBefore], (err) => {
         if (err) {
             console.error('Error inserting receipt:', err);
             return res.status(500).json({ error: err.message });
@@ -83,24 +95,23 @@ app.post('/api/receipts', upload.single('image'), (req, res) => {
     });
 });
 
-// עדכון קבלה קיימת
+// עדכון קבלה קיימת כולל תזכורת
 app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
-    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration } = req.body;
+    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
     const imagePath = req.file ? req.file.path : null;
 
-    // בדיקה אם הקבלה קיימת
     connection.query('SELECT * FROM Receipts WHERE receipt_id = ?', [id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length === 0) return res.status(404).json({ message: 'Receipt not found' });
 
         const sql = imagePath
-            ? 'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ? WHERE receipt_id = ?'
-            : 'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ? WHERE receipt_id = ?';
+            ? 'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? WHERE receipt_id = ?'
+            : 'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, reminder_days_before = ? WHERE receipt_id = ?';
 
         const params = imagePath
-            ? [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, id]
-            : [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, id];
+            ? [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, reminderDaysBefore, id]
+            : [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, id];
 
         connection.query(sql, params, (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -109,56 +120,48 @@ app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
     });
 });
 
+// מחיקת קבלה עם מחיקת תזכורות קשורות
 app.delete('/api/receipts/:id', (req, res) => {
     const { id } = req.params;
-    const sql = 'DELETE FROM Receipts WHERE receipt_id = ?';
-    connection.query(sql, [id], (err, result) => {
+    
+    // מחיקת התזכורות הקשורות לקבלה
+    const deleteRemindersSql = 'DELETE FROM Reminders WHERE receipt_id = ?';
+    connection.query(deleteRemindersSql, [id], (err) => {
         if (err) {
-            console.error("Error deleting receipt:", err);
+            console.error("Error deleting reminders for receipt:", err);
             return res.status(500).json({ error: err.message });
+        }
+
+        // מחיקת הקבלה לאחר מחיקת התזכורות
+        const deleteReceiptSql = 'DELETE FROM Receipts WHERE receipt_id = ?';
+        connection.query(deleteReceiptSql, [id], (err, result) => {
+            if (err) {
+                console.error("Error deleting receipt:", err);
+                return res.status(500).json({ error: err.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Receipt not found" });
+            }
+            res.json({ message: 'Receipt and related reminders deleted successfully' });
+        });
+    });
+});
+
+// הוספת תזכורת ועדכון תאריך בהתאם
+app.post('/api/reminders', (req, res) => {
+    const { userId, receiptId, reminderDaysBefore } = req.body;
+
+    const sql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ? AND user_id = ?';
+    
+    connection.query(sql, [reminderDaysBefore, receiptId, userId], (err, result) => {
+        if (err) {
+            console.error("Error updating reminder:", err.message);
+            return res.status(500).json({ error: "Failed to add or update reminder" });
         }
         if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Receipt not found" });
+            return res.status(404).json({ error: "Receipt not found or user mismatch" });
         }
-        res.json({ message: 'Receipt deleted successfully' });
-    });
-});
-
-
-// שליפת תזכורות
-app.get('/api/reminders', (req, res) => {
-    const { userId, receiptId } = req.query;
-    const sql = 'SELECT * FROM Reminders WHERE user_id = ? AND receipt_id = ?';
-    connection.query(sql, [userId, receiptId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// הוספת תזכורת
-app.post('/api/receipts', upload.single('image'), (req, res) => {
-    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration } = req.body;
-    console.log("Received data:", req.body); // בדיקת הנתונים שהתקבלו
-    const imagePath = req.file ? req.file.path : null;
-
-    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    connection.query(sql, [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath], (err) => {
-        if (err) {
-            console.error('Error inserting receipt:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json({ message: 'Receipt added successfully' });
-    });
-});
-
-
-// מחיקת תזכורת
-app.delete('/api/reminders/:id', (req, res) => {
-    const { id } = req.params;
-    const sql = 'DELETE FROM Reminders WHERE reminder_id = ?';
-    connection.query(sql, [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Reminder deleted successfully' });
+        res.status(201).json({ message: 'Reminder updated successfully' });
     });
 });
 
@@ -218,20 +221,6 @@ cron.schedule('0 8 * * *', () => {
         }
     });
 });
-
-// פונקציה לחישוב תאריך התזכורת
-function calculateReminderDate(reminderType) {
-    const today = new Date();
-    let daysBefore;
-
-    if (reminderType === '2days') daysBefore = 2;
-    else if (reminderType === '7days') daysBefore = 7;
-    else if (reminderType === '14days') daysBefore = 14;
-    else return today.toISOString().split('T')[0];
-
-    today.setDate(today.getDate() + daysBefore);
-    return today.toISOString().split('T')[0];
-}
 
 // הפעלת השרת על פורט 5000
 app.listen(5000, () => {
