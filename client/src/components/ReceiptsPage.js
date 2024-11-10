@@ -3,8 +3,8 @@ import axios from "axios";
 import styles from "./ReceiptsPage.module.css";
 
 function ReceiptsPage() {
-  const [receipts, setReceipts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [receipts, setReceipts] = useState([]); // מצב לשמירת רשימת הקבלות
+  const [categories, setCategories] = useState([]); // מצב לשמירת רשימת הקטגוריות
   const [newReceipt, setNewReceipt] = useState({
     userId: JSON.parse(localStorage.getItem("userId")),
     categoryId: "",
@@ -14,7 +14,7 @@ function ReceiptsPage() {
     warrantyExpiration: "",
     image: null,
     reminderDaysBefore: "",
-  });
+  }); // מצב לשמירת פרטי הקבלה החדשה
   const [showReceipts, setShowReceipts] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
@@ -22,6 +22,9 @@ function ReceiptsPage() {
   const [isAddingReminder, setIsAddingReminder] = useState(false);
   const [editReceiptId, setEditReceiptId] = useState(null);
 
+  const today = new Date().toISOString().split("T")[0]; // משתנה לשמירת תאריך היום בפורמט המתאים
+
+  // פונקציה לשליפת רשימת הקבלות מהשרת
   const fetchReceipts = async () => {
     try {
       const userId = JSON.parse(localStorage.getItem("userId"));
@@ -32,6 +35,7 @@ function ReceiptsPage() {
     }
   };
 
+  // פונקציה לשליפת הקטגוריות מהשרת
   const fetchCategories = async () => {
     try {
       const response = await axios.get("http://localhost:5000/api/categories");
@@ -79,13 +83,23 @@ function ReceiptsPage() {
     }
   };
 
+  // פונקציות לשינוי תאריכי הרכישה והאחריות בקבלה החדשה
+  const handlePurchaseDateChange = (e) => {
+    setNewReceipt({ ...newReceipt, purchaseDate: e.target.value });
+  };
+
+  const handleWarrantyExpirationChange = (e) => {
+    setNewReceipt({ ...newReceipt, warrantyExpiration: e.target.value });
+  };
+
+  // פונקציה להוספה או עדכון של קבלה
   const addOrUpdateReceipt = async () => {
     if (isAddingReminder) {
       await addReminder(editReceiptId);
       setShowAddForm(false);
       return;
     }
-
+  
     const formData = new FormData();
     formData.append("userId", newReceipt.userId || "");
     formData.append("categoryId", newReceipt.categoryId || "");
@@ -94,11 +108,11 @@ function ReceiptsPage() {
     formData.append("productName", newReceipt.productName || "");
     formData.append("warrantyExpiration", newReceipt.warrantyExpiration || "");
     formData.append("reminderDaysBefore", newReceipt.reminderDaysBefore || "");
-
+  
     if (newReceipt.image) {
       formData.append("image", newReceipt.image);
     }
-
+  
     try {
       if (isEditing && editReceiptId) {
         await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {
@@ -111,13 +125,28 @@ function ReceiptsPage() {
         });
         console.log("Receipt added successfully");
       }
-      setShowAddForm(false);
-      fetchReceipts();
+  
+      // איפוס השדות והסתרת הטופס לאחר הוספת קבלה
+      setNewReceipt({
+        userId: JSON.parse(localStorage.getItem("userId")),
+        categoryId: "",
+        storeName: "",
+        purchaseDate: "",
+        productName: "",
+        warrantyExpiration: "",
+        image: null,
+        reminderDaysBefore: "",
+      });
+  
+      setShowAddForm(false); // סגירת טופס הוספת קבלה
+      fetchReceipts(); // ריענון רשימת הקבלות
     } catch (error) {
       console.error("Error adding or updating receipt:", error);
     }
   };
+  
 
+  // פונקציה להוספת תזכורת לקבלה
   const addReminder = async (receiptId) => {
     try {
       await axios.post("http://localhost:5000/api/reminders", {
@@ -126,7 +155,7 @@ function ReceiptsPage() {
         reminderDaysBefore: newReceipt.reminderDaysBefore,
       });
       console.log("Reminder added successfully");
-      fetchReceipts(); // טוען מחדש את רשימת הקבלות כדי לעדכן את טבלת הקבלות
+      fetchReceipts();
     } catch (error) {
       console.error("Error adding reminder:", error);
     }
@@ -150,6 +179,7 @@ function ReceiptsPage() {
     setShowReceipts(false);
   };
 
+  // פונקציה לעריכת תזכורת בלבד עבור קבלה
   const editReminder = (receipt) => {
     setIsEditing(false);
     setIsAddingReminder(true);
@@ -174,15 +204,13 @@ function ReceiptsPage() {
 
   const deleteReminder = async (receiptId) => {
     try {
-        await axios.put(`http://localhost:5000/api/receipts/${receiptId}/reminder`);
-        console.log("Reminder deleted successfully");
-
-        fetchReceipts(); // רענון טבלת הקבלות לאחר מחיקת התזכורת
+      await axios.put(`http://localhost:5000/api/receipts/${receiptId}/reminder`);
+      console.log("Reminder deleted successfully");
+      fetchReceipts();
     } catch (error) {
-        console.error("Error deleting reminder:", error);
+      console.error("Error deleting reminder:", error);
     }
-};
-
+  };
 
   return (
     <div className={styles.container}>
@@ -200,6 +228,7 @@ function ReceiptsPage() {
         </button>
       </div>
 
+      {/* טבלת קבלות */}
       {showReceipts && (
         <div className={styles.tableContainer}>
           <table className={styles.receiptsTable}>
@@ -209,7 +238,7 @@ function ReceiptsPage() {
                 <th>מוצר</th>
                 <th>תאריך רכישה</th>
                 <th>תוקף אחריות</th>
-                <th>תמונה</th>
+                <th>קובץ קבלה</th>
                 <th>תזכורת</th>
                 <th>פעולות</th>
               </tr>
@@ -229,7 +258,7 @@ function ReceiptsPage() {
                     <td>
                       {receipt.image_path && (
                         <a href={`http://localhost:5000/${receipt.image_path}`} target="_blank" rel="noopener noreferrer">
-                          הצג תמונה
+                          הצג קבלה
                         </a>
                       )}
                     </td>
@@ -249,6 +278,7 @@ function ReceiptsPage() {
         </div>
       )}
 
+      {/* רשימת תזכורות */}
       {showReminders && (
         <div>
           <h3>רשימת כל התזכורות</h3>
@@ -271,6 +301,7 @@ function ReceiptsPage() {
         </div>
       )}
 
+      {/* טופס להוספת/עריכת קבלה */}
       {showAddForm && (
         <div className={styles.addReceiptForm}>
           <h3>{isEditing ? "עריכת קבלה" : isAddingReminder ? "הוספת תזכורת" : "הוספת קבלה חדשה"}</h3>
@@ -286,57 +317,88 @@ function ReceiptsPage() {
             </select>
           ) : (
             <>
-              <input
-                type="text"
-                placeholder="שם החנות"
-                value={newReceipt.storeName}
-                onChange={(e) => setNewReceipt({ ...newReceipt, storeName: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="שם המוצר"
-                value={newReceipt.productName}
-                onChange={(e) => setNewReceipt({ ...newReceipt, productName: e.target.value })}
-              />
-              <select
-                value={newReceipt.categoryId}
-                onChange={(e) => setNewReceipt({ ...newReceipt, categoryId: e.target.value })}
-              >
-                <option value="">בחר קטגוריה</option>
-                {categories.map((category) => (
-                  <option key={category.category_id} value={category.category_id}>
-                    {category.category_name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="date"
-                placeholder="תאריך רכישה"
-                value={newReceipt.purchaseDate}
-                onChange={(e) => setNewReceipt({ ...newReceipt, purchaseDate: e.target.value })}
-              />
-              <input
-                type="date"
-                placeholder="תוקף אחריות"
-                value={newReceipt.warrantyExpiration}
-                onChange={(e) => setNewReceipt({ ...newReceipt, warrantyExpiration: e.target.value })}
-              />
-              <input
-                type="file"
-                placeholder="תמונה"
-                onChange={(e) => setNewReceipt({ ...newReceipt, image: e.target.files[0] })}
-              />
-              <select
-                value={newReceipt.reminderDaysBefore || ""}
-                onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value || null })}
-              >
-                <option value="">בחר תזכורת</option>
-                <option value="2">יומיים לפני</option>
-                <option value="7">שבוע לפני</option>
-                <option value="14">שבועיים לפני</option>
-              </select>
+              <label>
+                שם החנות:
+                <input
+                  type="text"
+                  placeholder="שם החנות"
+                  value={newReceipt.storeName}
+                  onChange={(e) => setNewReceipt({ ...newReceipt, storeName: e.target.value })}
+                />
+              </label>
+              
+              <label>
+                שם המוצר:
+                <input
+                  type="text"
+                  placeholder="שם המוצר"
+                  value={newReceipt.productName}
+                  onChange={(e) => setNewReceipt({ ...newReceipt, productName: e.target.value })}
+                />
+              </label>
+
+              <label>
+                קטגוריה:
+                <br/>
+                <select
+                  value={newReceipt.categoryId}
+                  onChange={(e) => setNewReceipt({ ...newReceipt, categoryId: e.target.value })}
+                >
+                  <option value="">בחר קטגוריה</option>
+                  {categories.map((category) => (
+                    <option key={category.category_id} value={category.category_id}>
+                      {category.category_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+<br/>
+              <label>
+                תאריך רכישה:
+                <input
+                  type="date"
+                  placeholder="תאריך רכישה"
+                  value={newReceipt.purchaseDate}
+                  onChange={handlePurchaseDateChange}
+                  max={today}
+                />
+              </label>
+
+              <label>
+                תוקף אחריות:
+                <input
+                  type="date"
+                  placeholder="תוקף אחריות"
+                  value={newReceipt.warrantyExpiration}
+                  onChange={handleWarrantyExpirationChange}
+                  min={newReceipt.purchaseDate || today}
+                />
+              </label>
+
+              <label>
+               העלאת קבלה:
+                <input
+                  type="file"
+                  placeholder="קובץ הקבלה"
+                  onChange={(e) => setNewReceipt({ ...newReceipt, image: e.target.files[0] })}
+                />
+              </label>
+
+              <label>
+                תזכורת:
+                <select
+                  value={newReceipt.reminderDaysBefore || ""}
+                  onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value || null })}
+                >
+                  <option value="null">בחר תזכורת</option>
+                  <option value="2">יומיים לפני</option>
+                  <option value="7">שבוע לפני</option>
+                  <option value="14">שבועיים לפני</option>
+                </select>
+              </label>
             </>
           )}
+          <br/>
           <button onClick={addOrUpdateReceipt}>
             {isEditing || isAddingReminder ? "שמור שינויים" : "הוסף קבלה"}
           </button>
