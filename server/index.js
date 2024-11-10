@@ -14,20 +14,20 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 app.use('/api/auth', authRoutes);
 
-// אחסון קבצים עם multer
+// הגדרת אחסון קבצים עם multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dir = './uploads';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir); // יצירת תיקיית uploads אם לא קיימת
         cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
+        cb(null, Date.now() + path.extname(file.originalname)); // מתן שם ייחודי לקובץ
     }
 });
 const upload = multer({ storage });
 
-// שליחת מייל בטופס יצירת קשר
+// שליחת מייל באמצעות טופס יצירת קשר
 app.post('/contact', async (req, res) => {
     const { name, email, message } = req.body;
     const transporter = nodemailer.createTransport({
@@ -49,7 +49,7 @@ app.post('/contact', async (req, res) => {
     }
 });
 
-// שליפת כל הקטגוריות
+// שליפת כל הקטגוריות מהדאטה בייס
 app.get('/api/categories', (req, res) => {
     const sql = 'SELECT * FROM Categories';
     connection.query(sql, (err, results) => {
@@ -68,33 +68,100 @@ app.get('/api/receipts', (req, res) => {
     });
 });
 
-// הוספת קבלה עם קובץ כולל לוגים לבדיקת reminderDaysBefore
+// הוספת תזכורת בקבלה קיימת
+app.post('/api/reminders', (req, res) => {
+    const { userId, receiptId, reminderDaysBefore } = req.body;
+    
+    // הוספת תזכורת חדשה או עדכון אם כבר קיימת
+    const checkReminderSql = 'SELECT * FROM Reminders WHERE receipt_id = ?';
+    connection.query(checkReminderSql, [receiptId], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Failed to check reminder' });
+
+        // חישוב תאריך התזכורת לפי תאריך סיום האחריות
+        const warrantySql = 'SELECT warranty_expiration FROM Receipts WHERE receipt_id = ?';
+        connection.query(warrantySql, [receiptId], (err, receiptResults) => {
+            if (err || receiptResults.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+
+            const warrantyExpiration = new Date(receiptResults[0].warranty_expiration);
+            const reminderDate = new Date(warrantyExpiration.getTime() - reminderDaysBefore * 24 * 60 * 60 * 1000);
+
+            if (results.length > 0) {
+                // אם יש כבר תזכורת - מבצעים עדכון
+                const updateReminderSql = 'UPDATE Reminders SET reminder_days_before = ?, reminder_date = ? WHERE receipt_id = ?';
+                connection.query(updateReminderSql, [reminderDaysBefore, reminderDate, receiptId], (err) => {
+                    if (err) return res.status(500).json({ error: 'Failed to update reminder' });
+
+                    // עדכון השדה בטבלת הקבלות להצגת תזכורת
+                    const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
+                    connection.query(updateReceiptSql, [reminderDaysBefore, receiptId], (err) => {
+                        if (err) return res.status(500).json({ error: 'Failed to update receipt' });
+                        res.status(200).json({ message: 'Reminder updated successfully' });
+                    });
+                });
+            } else {
+                // אם אין תזכורת קיימת - מוסיפים חדשה
+                const insertReminderSql = 'INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date) VALUES (?, ?, ?, ?)';
+                connection.query(insertReminderSql, [userId, receiptId, reminderDaysBefore, reminderDate], (err) => {
+                    if (err) return res.status(500).json({ error: 'Failed to add reminder' });
+
+                    // עדכון השדה בטבלת הקבלות להצגת תזכורת
+                    const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
+                    connection.query(updateReceiptSql, [reminderDaysBefore, receiptId], (err) => {
+                        if (err) return res.status(500).json({ error: 'Failed to update receipt' });
+                        res.status(201).json({ message: 'Reminder added successfully' });
+                    });
+                });
+            }
+        });
+    });
+});
+
+
+// הוספת קבלה חדשה עם אפשרות לתזכורת
 app.post('/api/receipts', upload.single('image'), (req, res) => {
     const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
     const imagePath = req.file ? req.file.path : null;
 
-    console.log("Received data for new receipt:", {
-        userId,
-        categoryId,
-        storeName,
-        purchaseDate,
-        productName,
-        warrantyExpiration,
-        imagePath,
-        reminderDaysBefore
-    });
+    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const params = [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath];
 
-    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path, reminder_days_before) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    connection.query(sql, [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, reminderDaysBefore], (err) => {
+    connection.query(sql, params, (err, result) => {
         if (err) {
-            console.error('Error inserting receipt:', err);
+            console.error("Error adding receipt:", err);
             return res.status(500).json({ error: err.message });
         }
-        res.status(201).json({ message: 'Receipt added successfully' });
+
+        const receiptId = result.insertId;
+
+        if (reminderDaysBefore && reminderDaysBefore.trim() !== '') {
+            const daysBefore = parseInt(reminderDaysBefore, 10);
+            const reminderDate = new Date(new Date(warrantyExpiration).getTime() - daysBefore * 24 * 60 * 60 * 1000);
+        
+            const reminderSql = 'INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date) VALUES (?, ?, ?, ?)';
+            const reminderParams = [userId, receiptId, daysBefore, reminderDate];
+        
+            connection.query(reminderSql, reminderParams, (err) => {
+                if (err) {
+                    console.error("Error adding reminder:", err.message);
+                    return res.status(500).json({ error: "Failed to add reminder" });
+                }
+
+                const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
+                connection.query(updateReceiptSql, [daysBefore, receiptId], (err) => {
+                    if (err) {
+                        console.error("Error updating reminder_days_before in Receipts:", err.message);
+                        return res.status(500).json({ error: "Failed to update reminder_days_before in receipt" });
+                    }
+                    res.status(201).json({ message: 'Receipt and reminder added successfully' });
+                });
+            });
+        } else {
+            res.status(201).json({ message: 'Receipt added successfully without reminder' });
+        }
     });
 });
 
-// עדכון קבלה קיימת כולל תזכורת
+// עדכון קבלה קיימת כולל אפשרות לשנות תמונה ותזכורת
 app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
     const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
@@ -119,19 +186,41 @@ app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
     });
 });
 
-// מחיקת קבלה עם מחיקת תזכורות קשורות
+// מחיקת התזכורת מבלי למחוק את הקבלה
+app.put('/api/receipts/:id/reminder', (req, res) => {
+    const { id } = req.params;
+
+    // מחיקת התזכורת מטבלת Reminders
+    const deleteReminderSql = 'DELETE FROM Reminders WHERE receipt_id = ?';
+    connection.query(deleteReminderSql, [id], (err) => {
+        if (err) {
+            console.error("Error deleting reminder from Reminders:", err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        // עדכון השדה reminder_days_before בטבלת Receipts ל-NULL
+        const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = NULL WHERE receipt_id = ?';
+        connection.query(updateReceiptSql, [id], (err) => {
+            if (err) {
+                console.error("Error updating reminder_days_before in Receipts:", err);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Reminder deleted successfully' });
+        });
+    });
+});
+
+
 app.delete('/api/receipts/:id', (req, res) => {
     const { id } = req.params;
-    
-    // מחיקת התזכורות הקשורות לקבלה
+
     const deleteRemindersSql = 'DELETE FROM Reminders WHERE receipt_id = ?';
-    connection.query(deleteRemindersSql, [id], (err) => {
+    connection.query(deleteRemindersSql, [id], (err, result) => {
         if (err) {
             console.error("Error deleting reminders for receipt:", err);
             return res.status(500).json({ error: err.message });
         }
-
-        // מחיקת הקבלה לאחר מחיקת התזכורות
+        
         const deleteReceiptSql = 'DELETE FROM Receipts WHERE receipt_id = ?';
         connection.query(deleteReceiptSql, [id], (err, result) => {
             if (err) {
@@ -146,25 +235,7 @@ app.delete('/api/receipts/:id', (req, res) => {
     });
 });
 
-// הוספת תזכורת ועדכון תאריך בהתאם
-app.post('/api/reminders', (req, res) => {
-    const { userId, receiptId, reminderDaysBefore } = req.body;
-
-    const sql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ? AND user_id = ?';
-    
-    connection.query(sql, [reminderDaysBefore, receiptId, userId], (err, result) => {
-        if (err) {
-            console.error("Error updating reminder:", err.message);
-            return res.status(500).json({ error: "Failed to add or update reminder" });
-        }
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Receipt not found or user mismatch" });
-        }
-        res.status(201).json({ message: 'Reminder updated successfully' });
-    });
-});
-
-// קרון ג'וב לתזכורות יומיות
+// קרון ג'וב לתזכורות יומיות (שליחת התראות על סיום אחריות קרוב)
 cron.schedule('0 8 * * *', () => {
     console.log("Cron job running for warranty expiration checks");
     const sql = `SELECT * FROM Receipts WHERE warranty_expiration BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)`;

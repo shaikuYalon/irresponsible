@@ -21,7 +21,6 @@ function ReceiptsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingReminder, setIsAddingReminder] = useState(false);
   const [editReceiptId, setEditReceiptId] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const fetchReceipts = async () => {
     try {
@@ -82,7 +81,7 @@ function ReceiptsPage() {
 
   const addOrUpdateReceipt = async () => {
     if (isAddingReminder) {
-      addReminder(editReceiptId);
+      await addReminder(editReceiptId);
       setShowAddForm(false);
       return;
     }
@@ -127,15 +126,13 @@ function ReceiptsPage() {
         reminderDaysBefore: newReceipt.reminderDaysBefore,
       });
       console.log("Reminder added successfully");
-
-      // Refresh receipts immediately after adding reminder
-      fetchReceipts();
+      fetchReceipts(); // טוען מחדש את רשימת הקבלות כדי לעדכן את טבלת הקבלות
     } catch (error) {
       console.error("Error adding reminder:", error);
     }
   };
 
-  const handleEditClick = (receipt) => {
+  const editReceipt = (receipt) => {
     setIsEditing(true);
     setIsAddingReminder(false);
     setEditReceiptId(receipt.receipt_id);
@@ -153,25 +150,39 @@ function ReceiptsPage() {
     setShowReceipts(false);
   };
 
-  const handleDeleteClick = async (receipt) => {
+  const editReminder = (receipt) => {
+    setIsEditing(false);
+    setIsAddingReminder(true);
+    setEditReceiptId(receipt.receipt_id);
+    setNewReceipt((prev) => ({
+      ...prev,
+      reminderDaysBefore: receipt.reminder_days_before || "",
+    }));
+    setShowAddForm(true);
+    setShowReceipts(false);
+  };
+
+  const deleteReceipt = async (receiptId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/receipts/${receipt.receipt_id}`);
-      setReceipts(receipts.filter((r) => r.receipt_id !== receipt.receipt_id));
+      await axios.delete(`http://localhost:5000/api/receipts/${receiptId}`);
+      setReceipts(receipts.filter((r) => r.receipt_id !== receiptId));
+      console.log("Receipt deleted successfully");
     } catch (error) {
       console.error("Error deleting receipt:", error);
     }
   };
 
-  const handleAddReminderClick = (receiptId) => {
-    setEditReceiptId(receiptId);
-    setIsEditing(false);
-    setIsAddingReminder(true);
-    setShowAddForm(true);
-    setNewReceipt((prev) => ({
-      ...prev,
-      reminderDaysBefore: "",
-    }));
-  };
+  const deleteReminder = async (receiptId) => {
+    try {
+        await axios.put(`http://localhost:5000/api/receipts/${receiptId}/reminder`);
+        console.log("Reminder deleted successfully");
+
+        fetchReceipts(); // רענון טבלת הקבלות לאחר מחיקת התזכורת
+    } catch (error) {
+        console.error("Error deleting reminder:", error);
+    }
+};
+
 
   return (
     <div className={styles.container}>
@@ -224,10 +235,10 @@ function ReceiptsPage() {
                     </td>
                     <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
                     <td>
-                      <button onClick={() => handleEditClick(receipt)}>ערוך</button>
-                      <button onClick={() => handleDeleteClick(receipt)}>מחק</button>
+                      <button onClick={() => editReceipt(receipt)}>ערוך קבלה</button>
+                      <button onClick={() => deleteReceipt(receipt.receipt_id)}>מחק קבלה</button>
                       {!receipt.reminder_days_before && (
-                        <button onClick={() => handleAddReminderClick(receipt.receipt_id)}>הוסף תזכורת</button>
+                        <button onClick={() => editReminder(receipt)}>הוסף תזכורת</button>
                       )}
                     </td>
                   </tr>
@@ -250,8 +261,8 @@ function ReceiptsPage() {
                   <li key={receipt.receipt_id} className={styles.reminderItem}>
                     <span>{`ב-${reminderDate.toLocaleDateString()} תתקבל תזכורת על כך שנותרו ${receipt.reminder_days_before} ימים עד סיום האחריות על ${receipt.product_name}`}</span>
                     <div className={styles.buttonGroup}>
-                      <button onClick={() => handleEditClick(receipt)}>ערוך</button>
-                      <button onClick={() => handleDeleteClick(receipt)}>מחק</button>
+                      <button onClick={() => editReminder(receipt)}>ערוך תזכורת</button>
+                      <button onClick={() => deleteReminder(receipt.receipt_id)}>מחק תזכורת</button>
                     </div>
                   </li>
                 );
@@ -266,7 +277,7 @@ function ReceiptsPage() {
           {isAddingReminder ? (
             <select
               value={newReceipt.reminderDaysBefore || ""}
-              onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value })}
+              onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value || null })}
             >
               <option value="">בחר תזכורת</option>
               <option value="2">יומיים לפני</option>
@@ -317,7 +328,7 @@ function ReceiptsPage() {
               />
               <select
                 value={newReceipt.reminderDaysBefore || ""}
-                onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value })}
+                onChange={(e) => setNewReceipt({ ...newReceipt, reminderDaysBefore: e.target.value || null })}
               >
                 <option value="">בחר תזכורת</option>
                 <option value="2">יומיים לפני</option>
