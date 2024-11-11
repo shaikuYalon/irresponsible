@@ -171,13 +171,27 @@ app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length === 0) return res.status(404).json({ message: 'Receipt not found' });
 
+        // הכנה של שאילתת העדכון בהתאם לתנאי של reminderDaysBefore
         const sql = imagePath
-            ? 'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? WHERE receipt_id = ?'
-            : 'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, reminder_days_before = ? WHERE receipt_id = ?';
+            ? (reminderDaysBefore ? 
+                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? WHERE receipt_id = ?' 
+                : 
+                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ? WHERE receipt_id = ?')
+            : (reminderDaysBefore ? 
+                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, reminder_days_before = ? WHERE receipt_id = ?'
+                : 
+                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ? WHERE receipt_id = ?');
 
+        // יצירת המערך עם הפרמטרים בהתאם לתנאי של reminderDaysBefore
         const params = imagePath
-            ? [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, reminderDaysBefore, id]
-            : [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, id];
+            ? (reminderDaysBefore ? 
+                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, reminderDaysBefore, id] 
+                : 
+                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, id])
+            : (reminderDaysBefore ? 
+                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, id]
+                : 
+                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, id]);
 
         connection.query(sql, params, (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -185,6 +199,7 @@ app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
         });
     });
 });
+
 
 // מחיקת התזכורת מבלי למחוק את הקבלה
 app.put('/api/receipts/:id/reminder', (req, res) => {
@@ -234,6 +249,70 @@ app.delete('/api/receipts/:id', (req, res) => {
         });
     });
 });
+
+// פונקציות ניהול זבל
+
+// העברת קבלה לזבל
+app.put('/api/receipts/:id/trash', (req, res) => {
+    const { id } = req.params;
+
+    // עדכון `is_deleted` ל-1 ושמירת תאריך ושעה נוכחיים ב-`deleted_at`
+    const sql = 'UPDATE Receipts SET is_deleted = 1, deleted_at = NOW() WHERE receipt_id = ?';
+    connection.query(sql, [id], (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to move receipt to trash' });
+        res.json({ message: 'Receipt moved to trash' });
+    });
+});
+
+
+// שחזור קבלה מהזבל
+app.put('/api/receipts/restore/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'UPDATE Receipts SET is_deleted = 0 WHERE receipt_id = ?';
+    connection.query(sql, [id], (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to restore receipt' });
+        res.json({ message: 'Receipt restored successfully' });
+    });
+});
+
+// מחיקת קבלה לצמיתות מהזבל
+app.delete('/api/trash/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'DELETE FROM Receipts WHERE receipt_id = ?';
+    connection.query(sql, [id], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Failed to permanently delete receipt' });
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Receipt not found' });
+        res.json({ message: 'Receipt permanently deleted' });
+    });
+});
+
+// שליפת כל הקבלות שבזבל
+app.get('/api/trash', (req, res) => {
+    const sql = 'SELECT * FROM Receipts WHERE is_deleted = 1';
+    connection.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: 'Failed to fetch trash receipts' });
+        res.json(results);
+    });
+});
+
+// קרון ג'וב למחיקת קבלות מהזבל לאחר 30 ימים
+cron.schedule('0 0 * * *', () => {
+    console.log("Running cron job to delete old trash receipts");
+
+    const daysInTrash = 30; // מספר הימים לשמירת קבלה בזבל
+    const sql = `DELETE FROM Receipts WHERE is_deleted = 1 AND deleted_at < NOW() - INTERVAL ? DAY`;
+
+    connection.query(sql, [daysInTrash], (err, results) => {
+        if (err) {
+            console.error("Error deleting old receipts from trash:", err);
+        } else {
+            console.log(`Deleted ${results.affectedRows} old receipts from trash`);
+        }
+    });
+});
+
+
+
 
 // קרון ג'וב לתזכורות יומיות (שליחת התראות על סיום אחריות קרוב)
 cron.schedule('0 8 * * *', () => {
