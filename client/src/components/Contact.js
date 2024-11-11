@@ -7,6 +7,7 @@ function Contact() {
         email: '',
         message: ''
     });
+    const [message, setMessage] = useState(''); // הודעת הצלחה או ביטול
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -14,10 +15,16 @@ function Contact() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // כאן אפשר להוסיף את הלוגיקה לשליחת המייל
         console.log('Form submitted:', formData);
-        alert('ההודעה נשלחה בהצלחה!');
+        setMessage('ההודעה נשלחה בהצלחה!');
         setFormData({ name: '', email: '', message: '' });
+    };
+
+    const handleCancel = () => {
+        setMessage('הטופס בוטל.');
+        setTimeout(() => {
+            window.history.back(); // מחזיר את המשתמש לעמוד הקודם
+        }, 1000); // משך ההצגה של הודעת הביטול (במילישניות)
     };
 
     return (
@@ -47,8 +54,12 @@ function Contact() {
                     onChange={handleChange}
                     required
                 />
-                <button type="submit" className={styles.submitButton}>שלח</button>
+                <div className={styles.buttonGroup}>
+                    <button type="submit" className={styles.submitButton}>שלח</button>
+                    <button type="button" onClick={handleCancel} className={styles.submitButton}>ביטול</button>
+                </div>
             </form>
+            {message && <p className={styles.message}>{message}</p>}
         </div>
     );
 }

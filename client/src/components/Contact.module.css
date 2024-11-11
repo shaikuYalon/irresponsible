@@ -35,6 +35,12 @@
     resize: none;
 }
 
+.buttonGroup {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
 .submitButton {
     background-color: #4CAF50;
     color: #fff;
@@ -48,4 +54,10 @@
 
 .submitButton:hover {
     background-color: #43a047;
+}
+
+.message {
+    margin-top: 15px;
+    font-size: 16px;
+    color: #4CAF50;
 }
