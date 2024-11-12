@@ -14,6 +14,7 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 app.use('/api/auth', authRoutes);
 
+
 // הגדרת אחסון קבצים עם multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -57,16 +58,41 @@ app.get('/api/categories', (req, res) => {
         res.json(results);
     });
 });
-
-// שליפת קבלות לפי userId
+// קבלה לפי מיון
 app.get('/api/receipts', (req, res) => {
     const userId = req.query.userId;
-    const sql = 'SELECT * FROM Receipts WHERE user_id = ?';
-    connection.query(sql, [userId], (err, results) => {
+    const { categoryId, storeName, productName, startDate, endDate, sortField, sortOrder } = req.query;
+    let sql = 'SELECT * FROM Receipts WHERE user_id = ? AND is_deleted = 0';
+    const params = [userId];
+
+    if (categoryId) {
+        sql += ' AND category_id = ?';
+        params.push(categoryId);
+    }
+    if (storeName) {
+        sql += ' AND store_name LIKE ?';
+        params.push(`%${storeName}%`);
+    }
+    if (productName) {
+        sql += ' AND product_name LIKE ?';
+        params.push(`%${productName}%`);
+    }
+    if (startDate && endDate) {
+        sql += ' AND purchase_date BETWEEN ? AND ?';
+        params.push(startDate, endDate);
+    }
+
+    // הוספת מיון
+    if (sortField && sortOrder) {
+        sql += ` ORDER BY ${sortField} ${sortOrder}`;
+    }
+
+    connection.query(sql, params, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
 });
+
 
 // הוספת תזכורת בקבלה קיימת
 app.post('/api/reminders', (req, res) => {
