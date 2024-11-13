@@ -1,33 +1,30 @@
 import React, { useState } from "react";
-import styles from "../ReceiptsPage.module.css";
+import styles from "./ReceiptsTable.module.css";
 
 function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editReminder }) {
-  const [isFilterVisible, setIsFilterVisible] = useState(false); // מצב לבדיקת תצוגת החיפוש
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [searchCategory, setSearchCategory] = useState("");
   const [searchProductName, setSearchProductName] = useState("");
   const [searchStoreName, setSearchStoreName] = useState("");
   const [searchPurchaseDate, setSearchPurchaseDate] = useState("");
   const [searchYear, setSearchYear] = useState("");
 
-  // סינון קבלות לפי שדות החיפוש
   const filteredReceipts = receipts.filter((receipt) => {
     const matchCategory = searchCategory ? receipt.category_id === searchCategory : true;
     const matchProductName = searchProductName ? receipt.product_name.includes(searchProductName) : true;
     const matchStoreName = searchStoreName ? receipt.store_name.includes(searchStoreName) : true;
     const matchPurchaseDate = searchPurchaseDate ? receipt.purchase_date.startsWith(searchPurchaseDate) : true;
     const matchYear = searchYear ? new Date(receipt.purchase_date).getFullYear().toString() === searchYear : true;
-
     return matchCategory && matchProductName && matchStoreName && matchPurchaseDate && matchYear;
   });
 
   return (
     <div className={styles.tableContainer}>
-      {/* כפתור להצגת אפשרויות חיפוש */}
-      <button onClick={() => setIsFilterVisible(!isFilterVisible)}>
-        {isFilterVisible ? "סגור סינון" : "סינון לפי"}
-      </button>
+      <button className={styles.filterButton} onClick={() => setIsFilterVisible(!isFilterVisible)}>
+    {isFilterVisible ? "סגור סינון" : "סינון לפי"}
+</button>
 
-      {/* תיבת אפשרויות החיפוש */}
+
       {isFilterVisible && (
         <div className={styles.searchContainer}>
           <label>
@@ -103,11 +100,19 @@ function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editRem
                 </td>
                 <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
                 <td>
-                  <button onClick={() => editReceipt(receipt)}>ערוך קבלה</button>
-                  <button onClick={() => moveToTrash(receipt.receipt_id)}>מחק קבלה</button>
-                  {!receipt.reminder_days_before && (
-                    <button onClick={() => editReminder(receipt)}>הוסף תזכורת</button>
-                  )}
+                  <div className={styles.actionButtons}>
+                    <button className={`${styles.actionButton} ${styles.editButton}`} onClick={() => editReceipt(receipt)}>
+                      ערוך קבלה
+                    </button>
+                    <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => moveToTrash(receipt.receipt_id)}>
+                      מחק קבלה
+                    </button>
+                    {!receipt.reminder_days_before && (
+                      <button className={`${styles.actionButton} ${styles.reminderButton}`} onClick={() => editReminder(receipt)}>
+                        הוסף תזכורת
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))

@@ -1,29 +1,49 @@
-.actionButton {
-    margin: 0 10px; /* מוסיף ריווח של 10 פיקסלים מכל צד של הכפתור */
-    padding: 10px 20px;
-    background-color: #22a829;
+.actionButtons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* כפתורים בפאנל הפעולות - כל כפתור בצבע שונה */
+.receiptsButton {
+    background-color: #007bff; /* כחול */
     color: white;
+}
+
+.addFormButton {
+    background-color: #28a745; /* ירוק */
+    color: white;
+}
+
+.remindersButton {
+    background-color: #ffc107; /* צהוב */
+    color: white;
+}
+
+.trashButton {
+    background-color: #dc3545; /* אדום */
+    color: white;
+}
+
+.actionButton {
+    padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, transform 0.2s;
+    font-size: 1em;
 }
 
 .actionButton:hover {
-    background-color: #27bc10;
+    transform: translateY(-2px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-
+/* טבלה */
 .tableContainer {
-    padding: 0 20px; /* מרווח של 20px משני הצדדים */
+    padding: 0 20px;
 }
-
-.buttonGroup {
-    display: flex;
-    gap: 10px; /* Adjust the gap to control the spacing between buttons */
-    
-  }
-  
 
 .receiptsTable {
     width: 100%;
@@ -35,13 +55,13 @@
 .receiptsTable th,
 .receiptsTable td {
     padding: 12px;
-    text-align: center; /* ממרכז את הטקסט בכל התאים */
+    text-align: center;
     border: 1px solid #ddd;
     white-space: nowrap;
 }
 
 .receiptsTable th {
-    background-color: #007bff;
+    background-color: #007bff; /* רקע כותרות */
     color: white;
 }
 
@@ -51,9 +71,9 @@
     text-overflow: ellipsis;
 }
 
-/* עיצוב הכפתורים */
+/* כפתורים בתוך טבלת הקבלות */
 .receiptsTable button {
-    margin: 0 5px; /* ריווח אופקי בין הכפתורים */
+    margin: 0 5px;
     padding: 5px 10px;
     background-color: #007bff;
     color: white;
@@ -67,6 +87,7 @@
     background-color: #0056b3;
 }
 
+/* הודעה כאשר אין קבלות */
 .noReceiptsMessage {
     text-align: center;
     color: #777;
@@ -75,3 +96,75 @@
     border-radius: 5px;
 }
 
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* רשימת תזכורות */
+.remindersContainer {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.remindersTitle {
+    font-size: 1.5em;
+    color: #333;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.remindersList {
+    list-style: none;
+    padding: 0;
+}
+
+.reminderItem {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reminderButtonGroup {
+    display: flex;
+    gap: 10px;
+}
+
+.reminderButton {
+    padding: 8px 12px;
+    background-color: #007bff; /* כחול */
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.reminderButton:hover {
+    background-color: #0056b3;
+}
+
+.reminderButtonDelete {
+    padding: 8px 12px;
+    background-color: #dc3545; /* אדום למחיקה */
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.reminderButtonDelete:hover {
+    background-color: #c82333;
+}

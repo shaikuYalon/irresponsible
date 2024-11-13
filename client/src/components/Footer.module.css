@@ -1,3 +1,17 @@
+/* הגדרות עבור body כדי להחיל Flexbox */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* עיצוב המעטפת הראשית */
+.mainContent {
+    flex: 1; /* מאפשר לחלק המרכזי לתפוס את כל הגובה האפשרי */
+}
+
+/* עיצוב Footer */
 .footer {
     background-color: #f8f9fa;
     padding: 10px 0;
@@ -8,6 +22,7 @@
     box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* עיצוב קישורי Footer */
 .footerLinks {
     margin-bottom: 8px;
 }
@@ -20,7 +35,7 @@
 
 .footerLinks a:hover {
     text-decoration: underline;
-   color: green;
+    color: green;
 }
 
 .footer p {

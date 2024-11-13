@@ -2,13 +2,13 @@
 // הצגת רשימת תזכורות
 
 import React from "react";
-import styles from "../ReceiptsPage.module.css";
+import styles from "../ReceiptsPage.module.css"; // קובץ CSS ייעודי ל-RemindersList
 
 function RemindersList({ receipts, editReminder, deleteReminder }) {
   return (
-    <div>
-      <h3>רשימת כל התזכורות</h3>
-      <ul>
+    <div className={styles.remindersContainer}>
+      <h3 className={styles.remindersTitle}>רשימת כל התזכורות</h3>
+      <ul className={styles.remindersList}>
         {receipts
           .filter((receipt) => receipt.reminder_days_before)
           .map((receipt) => {
@@ -16,9 +16,9 @@ function RemindersList({ receipts, editReminder, deleteReminder }) {
             return (
               <li key={receipt.receipt_id} className={styles.reminderItem}>
                 <span>{`ב-${reminderDate.toLocaleDateString()} תתקבל תזכורת על כך שנותרו ${receipt.reminder_days_before} ימים עד סיום האחריות על ${receipt.product_name}`}</span>
-                <div className={styles.buttonGroup}>
-                  <button onClick={() => editReminder(receipt)}>ערוך תזכורת</button>
-                  <button onClick={() => deleteReminder(receipt.receipt_id)}>מחק תזכורת</button>
+                <div className={styles.reminderButtonGroup}>
+                  <button className={styles.reminderButton} onClick={() => editReminder(receipt)}>ערוך תזכורת</button>
+                  <button className={styles.reminderButtonDelete} onClick={() => deleteReminder(receipt.receipt_id)}>מחק תזכורת</button>
                 </div>
               </li>
             );

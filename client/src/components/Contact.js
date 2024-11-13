@@ -21,10 +21,7 @@ function Contact() {
     };
 
     const handleCancel = () => {
-        setMessage('הטופס בוטל.');
-        setTimeout(() => {
             window.history.back(); // מחזיר את המשתמש לעמוד הקודם
-        }, 1000); // משך ההצגה של הודעת הביטול (במילישניות)
     };
 
     return (

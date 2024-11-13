@@ -1,0 +1,129 @@
+.tableContainer {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* עיצוב הטבלה */
+.receiptsTable {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.receiptsTable th {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    border-right: 1px solid #ddd;
+}
+
+.receiptsTable td, 
+.receiptsTable th {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    border-right: 1px solid #ddd; /* קו גבול בין עמודות */
+}
+
+.receiptsTable tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* סגנון הכפתורים ברשימת הפעולות */
+.actionButtons {
+    display: flex;
+    gap: 8px; /* מרווח בין הכפתורים */
+    justify-content: center; /* ממרכז את הכפתורים בתא */
+}
+
+.actionButton {
+    margin: 5px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.3s;
+}
+
+.editButton {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.deleteButton {
+    background-color: #e57373;
+    color: white;
+}
+
+.reminderButton {
+    background-color: #ffca28;
+    color: white;
+}
+
+/* אפקט ריחוף לכפתורים */
+.actionButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* הודעה אם אין קבלות מתאימות */
+.noReceiptsMessage {
+    text-align: center;
+    font-size: 1.2em;
+    color: #888;
+}
+
+/* עיצוב קטע הסינון */
+.searchContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #f0f4f7;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.searchContainer input[type="text"],
+.searchContainer input[type="date"],
+.searchContainer select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-width: 200px;
+}
+
+.searchContainer label {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.filterButton {
+    margin-bottom: 15px; /* Add space below the button */
+    margin-top: -10px; /* Lift the button slightly */
+    padding: 10px 20px;
+    background-color: orange;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.filterButton:hover {
+    background-color: rgb(23, 107, 133);
+    transform: translateY(-2px); /* Add slight lift on hover */
+}
