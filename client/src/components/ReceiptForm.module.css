@@ -1,6 +1,6 @@
 /* הגדרת רקע לכל המסך */
 body {
-  background: 'white';
+  background: white;
 }
 
 /* עיצוב כללי לטופס */
@@ -8,10 +8,16 @@ body {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  background: linear-gradient(135deg, #ece9f1, #d6d1e8); /* מעבר צבעים בלבנדר רך */
-  border: 2px solid #b4a7d6;
+  background: white;
+  border: 2px solid;
+  border-image: linear-gradient(to right, #4285F4, #EA4335, #FBBC05, #34A853) 1;
   border-radius: 15px;
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* מסגרת לשדה העלאת הקובץ */
+.formContainer input[type="file"] {
+  border: 2px solid #ff6b6b; /* אדום-כתום */
 }
 
 /* עיצוב של כל התוויות והשדות */
@@ -22,13 +28,6 @@ body {
   margin-bottom: 15px;
 }
 
-/* עיצוב תוויות */
-.formContainer label {
-  font-weight: bold;
-  color: #4b3f72;
-  font-size: 16px;
-}
-
 /* עיצוב שדות קלט */
 .formContainer input[type="text"],
 .formContainer input[type="date"],
@@ -36,45 +35,85 @@ body {
   width: 100%;
   padding: 10px;
   margin-top: 5px;
-  border: 2px solid #b4a7d6;
   border-radius: 8px;
-  background-color: #ffffff;
   font-size: 15px;
-  color: #4b3f72;
   transition: border-color 0.3s;
 }
 
-.formContainer input[type="text"]:focus,
-.formContainer input[type="date"]:focus,
-.formContainer select:focus {
-  outline: none;
-  border-color: #9a78c2; /* צבע מודגש בעת פוקוס */
-}
-
-/* עיצוב כפתורים */
-.formContainer button {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #c49bdb, #9b78c2); /* מעבר צבעים בסגול */
-  color: white;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
+/* עיצוב תוויות */
+.formContainer label {
   font-weight: bold;
   font-size: 16px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s, box-shadow 0.3s;
 }
 
-/* מרווח בין כפתורי 'שמור' ו-'צלם תמונה' */
-.button-group {
+/* עיצוב מסגרות שדות קלט לפי הצבעים המבוקשים */
+.formContainer input[name="storeName"] {
+  border: 2px solid #007bff; /* כחול */
+}
+
+.formContainer input[name="productName"] {
+  border: 2px solid #dc3545; /* אדום */
+}
+
+.formContainer select[name="categoryId"] {
+  border: 2px solid #ffc107; /* צהוב */
+}
+
+.formContainer input[name="purchaseDate"] {
+  border: 2px solid #28a745; /* ירוק */
+}
+
+.formContainer input[name="warrantyExpiration"] {
+  border: 2px solid #007bff; /* כחול */
+}
+
+/* עיצוב כפתורים מותאם אישית */
+.buttonGroup {
   display: flex;
   justify-content: space-between;
-  gap: 10px; /* מרווח בין הכפתורים */
+  gap: 20px;
+  margin-top: 15px;
 }
 
-.formContainer button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+.cameraButtons {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  gap: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.captureButton,
+.exitButton {
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+
+.captureButton {
+  background-color: #007bff; /* כחול */
+}
+
+.exitButton {
+  background-color: #e53e3e; /* אדום */
+}
+
+.captureButton:hover,
+.exitButton:hover {
+  transform: scale(1.05);
+}
+
+.captureButton:active,
+.exitButton:active {
+  transform: scale(0.98);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* עיצוב מסך המצלמה */
@@ -91,53 +130,10 @@ body {
   z-index: 1000;
 }
 
-/* ווידאו במסך מלא */
 .fullscreenVideo {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* כפתור צילום */
-.captureButton {
-  position: absolute;
-  bottom: 20px;
-  background: linear-gradient(135deg, #9f7aea, #6b46c1);
-  color: white;
-  width: 60px;
-  height: 60px;
-  border: none;
-  border-radius: 50%;
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s;
-}
-
-.captureButton:hover {
-  transform: scale(1.1);
-}
-
-/* כפתור יציאה */
-.exitButton {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: linear-gradient(135deg, #e53e3e, #c53030);
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* עיצוב אזור העלאת קובץ ותזכורת */
@@ -152,12 +148,10 @@ body {
 .reminderSection {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  background-color: #f3e8ff; /* צבע רקע עדין לסגול */
   padding: 10px 15px;
   border-radius: 10px;
-  border: 1px solid #9a78c2;
+  border: 2px solid #28a745;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 15px;
 }
@@ -165,8 +159,8 @@ body {
 /* עיצוב תווית התזכורת */
 .reminderSection label {
   font-weight: bold;
-  color: #6b46c1;
-  font-size: 14px;
+  color: #dc3545;
+  font-size: 24px;
   margin: 0;
 }
 
@@ -174,10 +168,16 @@ body {
 .reminderSection select {
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid #9a78c2;
+  border: 2px solid #ffc107;
   background-color: #ffffff;
-  color: #6b46c1;
+  color: #007bff;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.3s, border-color 0.3s;
+}
+.photoPreview {
+  max-width: 100%; /* הגבלה על רוחב מקסימלי */
+  max-height: 100%; /* הגבלה על גובה מקסימלי */
+  object-fit: contain; /* מוודא שהמידות נשמרות בתוך המסגרת */
+  border-radius: 8px; /* אופציונלי - עיגול פינות */
 }

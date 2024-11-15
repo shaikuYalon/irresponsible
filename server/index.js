@@ -145,7 +145,8 @@ app.post('/api/reminders', (req, res) => {
 
 // הוספת קבלה חדשה עם אפשרות לתזכורת
 app.post('/api/receipts', upload.single('image'), (req, res) => {
-    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
+    const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
+    const categoryId = parseInt(req.body.categoryId, 10) || null; // ממיר את categoryId למספר או מגדיר null במקרה של ערך ריק
     const imagePath = req.file ? req.file.path : null;
 
     const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
@@ -294,12 +295,16 @@ app.put('/api/receipts/:id/trash', (req, res) => {
 // שחזור קבלה מהזבל
 app.put('/api/receipts/restore/:id', (req, res) => {
     const { id } = req.params;
-    const sql = 'UPDATE Receipts SET is_deleted = 0 WHERE receipt_id = ?';
+
+    // עדכון השדה is_deleted ל-0 ומאפסת את deleted_at בלבד, ללא איפוס תאריך רכישה
+    const sql = 'UPDATE Receipts SET is_deleted = 0, deleted_at = NULL WHERE receipt_id = ?';
+
     connection.query(sql, [id], (err) => {
-        if (err) return res.status(500).json({ error: 'Failed to restore receipt' });
-        res.json({ message: 'Receipt restored successfully' });
+        if (err) return res.status(500).json({ error: 'שחזור הקבלה נכשל' });
+        res.json({ message: 'הקבלה שוחזרה בהצלחה' });
     });
 });
+
 
 // מחיקת קבלה לצמיתות מהזבל
 app.delete('/api/trash/:id', (req, res) => {

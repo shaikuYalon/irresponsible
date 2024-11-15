@@ -144,8 +144,9 @@ function ReceiptsPage() {
     formData.append("reminderDaysBefore", updatedReceipt.reminderDaysBefore || "");
 
     if (updatedReceipt.image) {
-        formData.append("image", updatedReceipt.image);
-    }
+      formData.append("image", updatedReceipt.image);
+  }
+  
 
     try {
         if (isEditing && editReceiptId) {

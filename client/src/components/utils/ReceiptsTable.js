@@ -8,15 +8,16 @@ function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editRem
   const [searchStoreName, setSearchStoreName] = useState("");
   const [searchPurchaseDate, setSearchPurchaseDate] = useState("");
   const [searchYear, setSearchYear] = useState("");
-
+ 
   const filteredReceipts = receipts.filter((receipt) => {
-    const matchCategory = searchCategory ? receipt.category_id === searchCategory : true;
+    const matchCategory = searchCategory ? receipt.category_id.toString() === searchCategory : true;
     const matchProductName = searchProductName ? receipt.product_name.includes(searchProductName) : true;
     const matchStoreName = searchStoreName ? receipt.store_name.includes(searchStoreName) : true;
     const matchPurchaseDate = searchPurchaseDate ? receipt.purchase_date.startsWith(searchPurchaseDate) : true;
-    const matchYear = searchYear ? new Date(receipt.purchase_date).getFullYear().toString() === searchYear : true;
+    const matchYear = searchYear ? new Date(receipt.purchase_date).getFullYear() === Number(searchYear) : true;
     return matchCategory && matchProductName && matchStoreName && matchPurchaseDate && matchYear;
-  });
+});
+  
 
   return (
     <div className={styles.tableContainer}>
