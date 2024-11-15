@@ -4,37 +4,73 @@ import authRoutes from './auth.js';
 import connection from './db/connection.js';
 import nodemailer from 'nodemailer';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import cron from 'node-cron';
+import { initializeApp } from 'firebase/app';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { storage } from './firebaseConfig.js';
+import path from 'path';
+
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 app.use('/api/auth', authRoutes);
 
+// הגדרת אחסון קבצים עם multer לשימוש בזיכרון בלבד
+const upload = multer({ storage: multer.memoryStorage() });
 
-// הגדרת אחסון קבצים עם multer
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = './uploads';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir); // יצירת תיקיית uploads אם לא קיימת
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // מתן שם ייחודי לקובץ
+// פונקציה להעלאת תמונה לפיירבייס והחזרת URL
+const uploadImageToFirebase = async (file) => {
+    const uniqueSuffix = Date.now();
+    const fileName = `receipt_${uniqueSuffix}${path.extname(file.originalname)}`;
+    const storageRef = ref(storage, `receipts/${fileName}`);
+    const metadata = {
+        contentType: file.mimetype, // לדוגמה: "image/jpeg" או "image/png"
+    };
+    const snapshot = await uploadBytes(storageRef, file.buffer,metadata);
+    return await getDownloadURL(snapshot.ref);
+  };
+  
+
+// מסלול להוספת קבלה עם העלאה לפיירבייס
+app.post('/api/receipts', upload.single('image'), async (req, res) => {
+  const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
+  const categoryId = parseInt(req.body.categoryId, 10) || null;
+
+  try {
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await uploadImageToFirebase(req.file);
     }
+
+    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const params = [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imageUrl];
+
+    connection.query(sql, params, (err, result) => {
+      if (err) {
+        console.error("Error adding receipt:", err);
+        return res.status(500).json({ error: err.message });
+      }
+
+      res.status(201).json({ message: 'Receipt added successfully', receiptId: result.insertId });
+    });
+  } catch (error) {
+    console.error("Error uploading image to Firebase:", error);
+    res.status(500).json({ error: "Failed to upload image" });
+  }
 });
-const upload = multer({ storage });
+
+
 
 // שליחת מייל באמצעות טופס יצירת קשר
 app.post('/contact', async (req, res) => {
     const { name, email, message } = req.body;
     const transporter = nodemailer.createTransport({
         service: 'gmail',
-        auth: { user: 'your-email@gmail.com', pass: 'your-password' }
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
     });
+    
     const mailOptions = {
         from: email,
         to: 'Sh6744998@gmail.com',
@@ -305,17 +341,44 @@ app.put('/api/receipts/restore/:id', (req, res) => {
     });
 });
 
+// פונקציה למחיקת תמונה מפיירבייס
+const deleteImageFromFirebase = async (imagePath) => {
+    try {
+        const imageRef = ref(storage, imagePath);
+        await deleteObject(imageRef);
+        console.log(`Image at ${imagePath} deleted successfully from Firebase`);
+    } catch (error) {
+        console.error("Error deleting image from Firebase:", error);
+    }
+};
 
 // מחיקת קבלה לצמיתות מהזבל
 app.delete('/api/trash/:id', (req, res) => {
     const { id } = req.params;
-    const sql = 'DELETE FROM Receipts WHERE receipt_id = ?';
-    connection.query(sql, [id], (err, result) => {
-        if (err) return res.status(500).json({ error: 'Failed to permanently delete receipt' });
-        if (result.affectedRows === 0) return res.status(404).json({ error: 'Receipt not found' });
-        res.json({ message: 'Receipt permanently deleted' });
+
+    // שליפת נתיב התמונה של הקבלה
+    const getImagePathSql = 'SELECT image_path FROM Receipts WHERE receipt_id = ?';
+    connection.query(getImagePathSql, [id], async (err, results) => {
+        if (err) return res.status(500).json({ error: 'Failed to fetch receipt image path' });
+
+        if (results.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+
+        const imagePath = results[0].image_path;
+
+        // מחיקת התמונה מפיירבייס אם קיים imagePath
+        if (imagePath) {
+            await deleteImageFromFirebase(imagePath);
+        }
+
+        // מחיקת הקבלה ממסד הנתונים
+        const deleteReceiptSql = 'DELETE FROM Receipts WHERE receipt_id = ?';
+        connection.query(deleteReceiptSql, [id], (err, result) => {
+            if (err) return res.status(500).json({ error: 'Failed to permanently delete receipt' });
+            res.json({ message: 'Receipt and related image deleted successfully' });
+        });
     });
 });
+
 
 // שליפת כל הקבלות שבזבל
 app.get('/api/trash', (req, res) => {
@@ -380,8 +443,9 @@ cron.schedule('0 8 * * *', () => {
 
                     const transporter = nodemailer.createTransport({
                         service: 'gmail',
-                        auth: { user: 'your-email@gmail.com', pass: 'your-password' }
+                        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
                     });
+                    
 
                     const mailOptions = {
                         from: 'your-email@gmail.com',

@@ -94,7 +94,8 @@ function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editRem
                 <td>{new Date(receipt.warranty_expiration).toLocaleDateString()}</td>
                 <td>
                   {receipt.image_path && (
-                    <a href={`http://localhost:5000/${receipt.image_path}`} target="_blank" rel="noopener noreferrer">
+                      <a href={`${receipt.image_path}?alt=media`} target="_blank" rel="noopener noreferrer">
+
                       הצג קבלה
                     </a>
                   )}
