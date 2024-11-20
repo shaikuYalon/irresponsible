@@ -19,54 +19,67 @@ function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editRem
 });
   
 
-  return (
-    <div className={styles.tableContainer}>
-      <button className={styles.filterButton} onClick={() => setIsFilterVisible(!isFilterVisible)}>
-    {isFilterVisible ? "סגור סינון" : "סינון לפי"}
-</button>
+return (
+  <div className={styles.tableContainer}>
+    <button className={styles.filterButton} onClick={() => setIsFilterVisible(!isFilterVisible)}>
+      {isFilterVisible ? "סגור סינון" : "סינון לפי"}
+    </button>
 
+    {isFilterVisible && (
+      <div className={styles.searchContainer}>
+        <label>
+          חפש לפי קטגוריה:
+          <select value={searchCategory} onChange={(e) => setSearchCategory(e.target.value)}>
+            <option value="">כל הקטגוריות</option>
+            {categories.map((category) => (
+              <option key={category.category_id} value={category.category_id}>
+                {category.category_name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <input
+          type="text"
+          placeholder="חפש לפי שם המוצר"
+          value={searchProductName}
+          onChange={(e) => setSearchProductName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="חפש לפי שם החנות"
+          value={searchStoreName}
+          onChange={(e) => setSearchStoreName(e.target.value)}
+        />
+        <label>
+          חפש לפי תאריך רכישה:
+          <input
+            type="date"
+            value={searchPurchaseDate}
+            onChange={(e) => setSearchPurchaseDate(e.target.value)}
+          />
+        </label>
+        <input
+          type="text"
+          placeholder="חפש לפי שנה"
+          value={searchYear}
+          onChange={(e) => setSearchYear(e.target.value)}
+        />
+        <button
+          className={styles.resetButton}
+          onClick={() => {
+            setSearchCategory("");
+            setSearchProductName("");
+            setSearchStoreName("");
+            setSearchPurchaseDate("");
+            setSearchYear("");
+          }}
+        >
+          איפוס סינון
+        </button>
+      </div>
+    )}
+ 
 
-      {isFilterVisible && (
-        <div className={styles.searchContainer}>
-          <label>
-            חפש לפי קטגוריה:
-            <select value={searchCategory} onChange={(e) => setSearchCategory(e.target.value)}>
-              <option value="">כל הקטגוריות</option>
-              {categories.map((category) => (
-                <option key={category.category_id} value={category.category_id}>
-                  {category.category_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <input
-            type="text"
-            placeholder="חפש לפי שם המוצר"
-            value={searchProductName}
-            onChange={(e) => setSearchProductName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="חפש לפי שם החנות"
-            value={searchStoreName}
-            onChange={(e) => setSearchStoreName(e.target.value)}
-          />
-          <label>
-            חפש לפי תאריך רכישה:
-            <input
-              type="date"
-              value={searchPurchaseDate}
-              onChange={(e) => setSearchPurchaseDate(e.target.value)}
-            />
-          </label>
-          <input
-            type="text"
-            placeholder="חפש לפי שנה"
-            value={searchYear}
-            onChange={(e) => setSearchYear(e.target.value)}
-          />
-        </div>
-      )}
 
       <table className={styles.receiptsTable}>
         <thead>
@@ -81,45 +94,57 @@ function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editRem
           </tr>
         </thead>
         <tbody>
-          {filteredReceipts.length === 0 ? (
-            <tr>
-              <td colSpan="7" className={styles.noReceiptsMessage}>אין קבלות שמורות</td>
-            </tr>
-          ) : (
-            filteredReceipts.map((receipt) => (
-              <tr key={receipt.receipt_id}>
-                <td>{receipt.store_name}</td>
-                <td>{receipt.product_name}</td>
-                <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
-                <td>{new Date(receipt.warranty_expiration).toLocaleDateString()}</td>
-                <td>
-                  {receipt.image_path && (
-                      <a href={`${receipt.image_path}?alt=media`} target="_blank" rel="noopener noreferrer">
+  {filteredReceipts.length === 0 ? (
+    <tr key="no-receipts">
+      <td colSpan="7" className={styles.noReceiptsMessage}>אין קבלות שמורות</td>
+    </tr>
+  ) : (
+    filteredReceipts.map((receipt, index) => (
+      <tr key={receipt.receipt_id || `receipt-${index}`}>
+        <td>{receipt.store_name}</td>
+        <td>{receipt.product_name}</td>
+        <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
+        <td>{new Date(receipt.warranty_expiration).toLocaleDateString()}</td>
+        <td>
+        {receipt.image_path ? (
+  <a href={`${receipt.image_path}?alt=media`} target="_blank" rel="noopener noreferrer">
+    הצג קבלה
+  </a>
+) : (
+  <span>אין קבלה</span>
+)}
 
-                      הצג קבלה
-                    </a>
-                  )}
-                </td>
-                <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
-                <td>
-                  <div className={styles.actionButtons}>
-                    <button className={`${styles.actionButton} ${styles.editButton}`} onClick={() => editReceipt(receipt)}>
-                      ערוך קבלה
-                    </button>
-                    <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => moveToTrash(receipt.receipt_id)}>
-                      מחק קבלה
-                    </button>
-                    {!receipt.reminder_days_before && (
-                      <button className={`${styles.actionButton} ${styles.reminderButton}`} onClick={() => editReminder(receipt)}>
-                        הוסף תזכורת
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
+        </td>
+        <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
+        <td>
+          <div className={styles.actionButtons}>
+            <button
+              className={`${styles.actionButton} ${styles.editButton}`}
+              onClick={() => editReceipt(receipt)}
+            >
+              ערוך קבלה
+            </button>
+            <button
+              className={`${styles.actionButton} ${styles.deleteButton}`}
+              onClick={() => moveToTrash(receipt.receipt_id)}
+            >
+              מחק קבלה
+            </button>
+            {!receipt.reminder_days_before && (
+              <button
+           
+                className={`${styles.actionButton} ${styles.reminderButton}`}
+                onClick={() => editReminder(receipt)}>
+              הוסף תזכורת                             
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
+
       </table>
     </div>
   );

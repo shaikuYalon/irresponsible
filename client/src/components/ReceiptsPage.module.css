@@ -168,3 +168,82 @@
 .reminderButtonDelete:hover {
     background-color: #c82333;
 }
+
+.buttonContainer {
+    display: flex;
+    gap: 10px; /* מרווח בין הכפתורים */
+  }
+  
+  .buttonContainer button {
+    padding: 8px 12px; /* ריווח פנימי בתוך הכפתורים */
+    border: none; /* מסגרת */
+    border-radius: 4px; /* פינות מעוגלות */
+    cursor: pointer; /* שינוי הסמן */
+  }
+  
+  .buttonContainer button:first-child {
+    background-color: #4caf50; /* צבע ירוק לכפתור שחזור */
+    color: white; /* צבע טקסט */
+  }
+  
+  .buttonContainer button:last-child {
+    background-color: #f44336; /* צבע אדום לכפתור מחיקה */
+    color: white; /* צבע טקסט */
+  }
+  
+  .buttonContainer button:hover {
+    opacity: 0.8; /* אפקט ריחוף */
+  }
+  
+  .trashTable {
+    width: 100%; /* הטבלה תתפוס את כל רוחב האלמנט */
+    border-collapse: collapse; /* מבטל רווחים בין הגבולות */
+    margin: 20px 0; /* מרווח מעל ומתחת לטבלה */
+    font-size: 16px; /* גודל טקסט */
+    text-align: center; /* יישור טקסט למרכז */  }
+  
+  .trashTable th, .trashTable td {
+    border: 1px solid #ddd; /* גבול עדין */
+    padding: 12px; /* ריווח פנימי */
+  }
+  
+  .trashTable th {
+    background-color: #f4f4f4; /* רקע לכותרות */
+    color: #333; /* צבע טקסט */
+    font-weight: bold; /* טקסט מודגש */
+  }
+  
+  .trashTable tr:nth-child(even) {
+    background-color: #f9f9f9; /* רקע לשורות זוגיות */
+  }
+  
+  .trashTable tr:hover {
+    background-color: #f1f1f1; /* אפקט ריחוף */
+  }
+  
+  .buttonContainer {
+    display: flex; /* סידור הכפתורים בשורה */
+    gap: 10px; /* מרווח בין הכפתורים */
+  }
+  
+  .buttonContainer button {
+    padding: 8px 12px; /* ריווח פנימי בתוך הכפתורים */
+    border: none; /* ללא גבול */
+    border-radius: 4px; /* פינות מעוגלות */
+    cursor: pointer; /* סמן עכבר */
+  }
+  
+  .buttonContainer button:first-child {
+    background-color: #4caf50; /* צבע ירוק לכפתור שחזור */
+    color: white; /* צבע טקסט */
+  }
+  
+  .buttonContainer button:last-child {
+    background-color: #f44336; /* צבע אדום לכפתור מחיקה */
+    color: white; /* צבע טקסט */
+  }
+  
+  .buttonContainer button:hover {
+    opacity: 0.8; /* אפקט ריחוף */
+  }
+  

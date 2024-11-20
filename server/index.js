@@ -12,6 +12,7 @@ import path from 'path';
 
 
 
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -33,35 +34,23 @@ const uploadImageToFirebase = async (file) => {
   };
   
 
-// מסלול להוספת קבלה עם העלאה לפיירבייס
-app.post('/api/receipts', upload.single('image'), async (req, res) => {
-  const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
-  const categoryId = parseInt(req.body.categoryId, 10) || null;
+// מסלול להעלאת תמונה בלבד לפיירבייס
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+    try {
+        let imageUrl = null;
 
-  try {
-    let imageUrl = null;
-    if (req.file) {
-      imageUrl = await uploadImageToFirebase(req.file);
+        if (req.file) {
+            imageUrl = await uploadImageToFirebase(req.file); // העלאת התמונה לפיירבייס
+        } else {
+            return res.status(400).json({ error: "No image file provided" });
+        }
+
+        res.status(200).json({ message: "Image uploaded successfully", imageUrl });
+    } catch (error) {
+        console.error("Error uploading image to Firebase:", error);
+        res.status(500).json({ error: "Failed to upload image" });
     }
-
-    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    const params = [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imageUrl];
-
-    connection.query(sql, params, (err, result) => {
-      if (err) {
-        console.error("Error adding receipt:", err);
-        return res.status(500).json({ error: err.message });
-      }
-
-      res.status(201).json({ message: 'Receipt added successfully', receiptId: result.insertId });
-    });
-  } catch (error) {
-    console.error("Error uploading image to Firebase:", error);
-    res.status(500).json({ error: "Failed to upload image" });
-  }
 });
-
-
 
 // שליחת מייל באמצעות טופס יצירת קשר
 app.post('/contact', async (req, res) => {
@@ -130,11 +119,11 @@ app.get('/api/receipts', (req, res) => {
 });
 
 
-// הוספת תזכורת בקבלה קיימת
+// הוספת או עדכון תזכורת בקבלה קיימת
 app.post('/api/reminders', (req, res) => {
     const { userId, receiptId, reminderDaysBefore } = req.body;
-    
-    // הוספת תזכורת חדשה או עדכון אם כבר קיימת
+
+    // בדיקה אם תזכורת כבר קיימת
     const checkReminderSql = 'SELECT * FROM Reminders WHERE receipt_id = ?';
     connection.query(checkReminderSql, [receiptId], (err, results) => {
         if (err) return res.status(500).json({ error: 'Failed to check reminder' });
@@ -148,29 +137,50 @@ app.post('/api/reminders', (req, res) => {
             const reminderDate = new Date(warrantyExpiration.getTime() - reminderDaysBefore * 24 * 60 * 60 * 1000);
 
             if (results.length > 0) {
-                // אם יש כבר תזכורת - מבצעים עדכון
-                const updateReminderSql = 'UPDATE Reminders SET reminder_days_before = ?, reminder_date = ? WHERE receipt_id = ?';
+                // אם תזכורת קיימת - מבצעים עדכון
+                const updateReminderSql = `
+                    UPDATE Reminders 
+                    SET reminder_days_before = ?, reminder_date = ? 
+                    WHERE receipt_id = ?
+                `;
                 connection.query(updateReminderSql, [reminderDaysBefore, reminderDate, receiptId], (err) => {
                     if (err) return res.status(500).json({ error: 'Failed to update reminder' });
 
-                    // עדכון השדה בטבלת הקבלות להצגת תזכורת
-                    const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
+                    // עדכון בטבלת הקבלות
+                    const updateReceiptSql = `
+                        UPDATE Receipts 
+                        SET reminder_days_before = ? 
+                        WHERE receipt_id = ?
+                    `;
                     connection.query(updateReceiptSql, [reminderDaysBefore, receiptId], (err) => {
-                        if (err) return res.status(500).json({ error: 'Failed to update receipt' });
-                        res.status(200).json({ message: 'Reminder updated successfully' });
+                        if (err) {
+                            console.error("Error updating reminder_days_before in Receipts:", err.message);
+                            return res.status(500).json({ error: 'Failed to update reminder_days_before in receipt' });
+                        }
+                        res.status(200).json({ message: 'Reminder and receipt updated successfully' });
                     });
                 });
             } else {
-                // אם אין תזכורת קיימת - מוסיפים חדשה
-                const insertReminderSql = 'INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date) VALUES (?, ?, ?, ?)';
+                // אם אין תזכורת - מוסיפים חדשה
+                const insertReminderSql = `
+                    INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date) 
+                    VALUES (?, ?, ?, ?)
+                `;
                 connection.query(insertReminderSql, [userId, receiptId, reminderDaysBefore, reminderDate], (err) => {
                     if (err) return res.status(500).json({ error: 'Failed to add reminder' });
 
-                    // עדכון השדה בטבלת הקבלות להצגת תזכורת
-                    const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
+                    // עדכון בטבלת הקבלות
+                    const updateReceiptSql = `
+                        UPDATE Receipts 
+                        SET reminder_days_before = ? 
+                        WHERE receipt_id = ?
+                    `;
                     connection.query(updateReceiptSql, [reminderDaysBefore, receiptId], (err) => {
-                        if (err) return res.status(500).json({ error: 'Failed to update receipt' });
-                        res.status(201).json({ message: 'Reminder added successfully' });
+                        if (err) {
+                            console.error("Error updating reminder_days_before in Receipts:", err.message);
+                            return res.status(500).json({ error: 'Failed to update receipt' });
+                        }
+                        res.status(201).json({ message: 'Reminder added and receipt updated successfully' });
                     });
                 });
             }
@@ -179,89 +189,150 @@ app.post('/api/reminders', (req, res) => {
 });
 
 
-// הוספת קבלה חדשה עם אפשרות לתזכורת
-app.post('/api/receipts', upload.single('image'), (req, res) => {
+// הוספת קבלה חדשה   
+app.post('/api/receipts', upload.single('image'), async (req, res) => {
     const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
-    const categoryId = parseInt(req.body.categoryId, 10) || null; // ממיר את categoryId למספר או מגדיר null במקרה של ערך ריק
-    const imagePath = req.file ? req.file.path : null;
+    const categoryId = parseInt(req.body.categoryId, 10) || null;
 
-    const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    const params = [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath];
-
-    connection.query(sql, params, (err, result) => {
-        if (err) {
-            console.error("Error adding receipt:", err);
-            return res.status(500).json({ error: err.message });
+    try {
+        // העלאת תמונה לפיירבייס אם יש תמונה
+        let imagePath = null;
+        if (req.file) {
+            imagePath = await uploadImageToFirebase(req.file);
         }
 
-        const receiptId = result.insertId;
+        // הוספת הקבלה ל-DB
+        const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath];
 
-        if (reminderDaysBefore && reminderDaysBefore.trim() !== '') {
-            const daysBefore = parseInt(reminderDaysBefore, 10);
-            const reminderDate = new Date(new Date(warrantyExpiration).getTime() - daysBefore * 24 * 60 * 60 * 1000);
-        
-            const reminderSql = 'INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date) VALUES (?, ?, ?, ?)';
-            const reminderParams = [userId, receiptId, daysBefore, reminderDate];
-        
-            connection.query(reminderSql, reminderParams, (err) => {
-                if (err) {
-                    console.error("Error adding reminder:", err.message);
-                    return res.status(500).json({ error: "Failed to add reminder" });
-                }
+        connection.query(sql, params, (err, result) => {
+            if (err) {
+                console.error("Error adding receipt:", err);
+                return res.status(500).json({ error: err.message });
+            }
 
-                const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
-                connection.query(updateReceiptSql, [daysBefore, receiptId], (err) => {
+            const receiptId = result.insertId;
+
+            // הוספת תזכורת אם נדרש
+            if (reminderDaysBefore && reminderDaysBefore.trim() !== '') {
+                const daysBefore = parseInt(reminderDaysBefore, 10);
+                const reminderDate = new Date(new Date(warrantyExpiration).getTime() - daysBefore * 24 * 60 * 60 * 1000);
+
+                const reminderSql = 'INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date) VALUES (?, ?, ?, ?)';
+                const reminderParams = [userId, receiptId, daysBefore, reminderDate];
+
+                connection.query(reminderSql, reminderParams, (err) => {
                     if (err) {
-                        console.error("Error updating reminder_days_before in Receipts:", err.message);
-                        return res.status(500).json({ error: "Failed to update reminder_days_before in receipt" });
+                        console.error("Error adding reminder:", err.message);
+                        return res.status(500).json({ error: "Failed to add reminder" });
                     }
-                    res.status(201).json({ message: 'Receipt and reminder added successfully' });
+
+                    // עדכון טבלת הקבלות עם reminder_days_before
+                    const updateReceiptSql = 'UPDATE Receipts SET reminder_days_before = ? WHERE receipt_id = ?';
+                    connection.query(updateReceiptSql, [daysBefore, receiptId], (err) => {
+                        if (err) {
+                            console.error("Error updating reminder_days_before in Receipts:", err.message);
+                            return res.status(500).json({ error: "Failed to update reminder_days_before in receipt" });
+                        }
+                        res.status(201).json({ message: 'Receipt and reminder added successfully' });
+                    });
                 });
-            });
-        } else {
-            res.status(201).json({ message: 'Receipt added successfully without reminder' });
-        }
-    });
+            } else {
+                res.status(201).json({ message: 'Receipt added successfully without reminder' });
+            }
+        });
+    } catch (error) {
+        console.error("Error processing receipt:", error);
+        res.status(500).json({ error: "Failed to process receipt" });
+    }
 });
 
-// עדכון קבלה קיימת כולל אפשרות לשנות תמונה ותזכורת
-app.put('/api/receipts/:id', upload.single('image'), (req, res) => {
+
+app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
     const { id } = req.params;
     const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
-    const imagePath = req.file ? req.file.path : null;
+    console.log(userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, id);
+    try {
+        let newImagePath = null;
 
-    connection.query('SELECT * FROM Receipts WHERE receipt_id = ?', [id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (results.length === 0) return res.status(404).json({ message: 'Receipt not found' });
+        // העלאת תמונה חדשה לפיירבייס אם קיים קובץ
+        if (req.file) {
+            newImagePath = await uploadImageToFirebase(req.file);
 
-        // הכנה של שאילתת העדכון בהתאם לתנאי של reminderDaysBefore
-        const sql = imagePath
-            ? (reminderDaysBefore ? 
-                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? WHERE receipt_id = ?' 
-                : 
-                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ? WHERE receipt_id = ?')
-            : (reminderDaysBefore ? 
-                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, reminder_days_before = ? WHERE receipt_id = ?'
-                : 
-                'UPDATE Receipts SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ? WHERE receipt_id = ?');
+            // מחיקת תמונה ישנה מפיירבייס
+            const getImagePathSql = 'SELECT image_path FROM Receipts WHERE receipt_id = ?';
+            connection.query(getImagePathSql, [id], async (err, results) => {
+                if (err) {
+                    console.error("Error fetching current image path:", err);
+                    return res.status(500).json({ error: "Failed to fetch current image path" });
+                }
 
-        // יצירת המערך עם הפרמטרים בהתאם לתנאי של reminderDaysBefore
-        const params = imagePath
-            ? (reminderDaysBefore ? 
-                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, reminderDaysBefore, id] 
-                : 
-                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath, id])
-            : (reminderDaysBefore ? 
-                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, id]
-                : 
-                [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, id]);
+                if (results.length > 0 && results[0].image_path) {
+                    try {
+                        await deleteImageFromFirebase(results[0].image_path);
+                        console.log("Old image deleted from Firebase");
+                    } catch (error) {
+                        console.error("Error deleting old image from Firebase:", error);
+                    }
+                }
+            });
+        }
+
+        // עדכון הקבלה בטבלת Receipts
+        const sql = `
+            UPDATE Receipts 
+            SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? 
+            WHERE receipt_id = ?
+        `;
+        const params = [
+            userId,
+            categoryId,
+            storeName,
+            purchaseDate,
+            productName,
+            warrantyExpiration,
+            newImagePath || null, // אם אין תמונה חדשה, השאר את הקיימת
+            reminderDaysBefore || null,
+            id,
+        ];
 
         connection.query(sql, params, (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Receipt updated successfully' });
+            if (err) {
+                console.error("Error updating receipt:", err);
+                return res.status(500).json({ error: "Failed to update receipt" });
+            }
+
+            // אם התזכורת מעודכנת, לעדכן גם בטבלת Reminders
+            if (reminderDaysBefore && reminderDaysBefore.trim() !== '') {
+                const daysBefore = parseInt(reminderDaysBefore, 10);
+                const reminderDate = new Date(new Date(warrantyExpiration).getTime() - daysBefore * 24 * 60 * 60 * 1000);
+
+                const updateReminderSql = `
+                    INSERT INTO Reminders (user_id, receipt_id, reminder_days_before, reminder_date)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE 
+                        reminder_days_before = VALUES(reminder_days_before),
+                        reminder_date = VALUES(reminder_date)
+                `;
+                const reminderParams = [userId, id, daysBefore, reminderDate];
+
+                connection.query(updateReminderSql, reminderParams, (err) => {
+                    if (err) {
+                        console.error("Error updating reminder in Reminders:", err);
+                        return res.status(500).json({ error: "Failed to update reminder in Reminders" });
+                    }
+                    res.json({ message: 'Receipt and reminder updated successfully' });
+                });
+            } else {
+                res.json({ message: 'Receipt updated successfully without reminder changes' });
+            }
         });
-    });
+    } catch (error) {
+        console.error("Error updating receipt:", error);
+        res.status(500).json({ error: "Failed to update receipt" });
+    }
 });
+
 
 
 // מחיקת התזכורת מבלי למחוק את הקבלה

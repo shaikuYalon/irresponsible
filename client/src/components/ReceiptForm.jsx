@@ -20,6 +20,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
 
   useEffect(() => {
     if (receiptData) {
+      console.log("Receipt data loaded:", receiptData);
       setReceipt(receiptData);
     }
   }, [receiptData]);
@@ -27,8 +28,9 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setReceipt({ ...receipt, [name]: value });
+    console.log(`Field ${name} updated to: ${value}`);
   };
-
+  
   useEffect(() => {
     if (isCameraOpen) {
       navigator.mediaDevices
@@ -111,100 +113,18 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
       ...receipt,
       categoryId: receipt.categoryId || null,
     };
+    console.log("Submitting receipt:", updatedReceipt);
     onSave(updatedReceipt);
   };
 
   return (
     <div className="formContainerWrapper">
-    <div className={styles.formContainer}>
-      <h3>{isReminderOnly ? "עריכת תזכורת" : "הוספת/עריכת קבלה"}</h3>
-
-      {!isReminderOnly && (
-        <>
-          <div className={styles.scanButtonContainer}>
-            <button onClick={handleScanReceipt} disabled={isScanning}>
-              {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
-            </button>
-          </div>
-
-          <label>
-            שם החנות:
-            <input
-              type="text"
-              name="storeName"
-              value={receipt.storeName || ""}
-              onChange={handleChange}
-            />
-          </label>
-          <label>
-            שם המוצר:
-            <input
-              type="text"
-              name="productName"
-              value={receipt.productName || ""}
-              onChange={handleChange}
-            />
-          </label>
-          <label>
-            קטגוריה:
-            <select
-              name="categoryId"
-              value={receipt.categoryId || ""}
-              onChange={handleChange}
-            >
-              <option value="">בחר קטגוריה</option>
-              {categories.length === 0 ? (
-                <option disabled>אין קטגוריות זמינות</option>
-              ) : (
-                categories.map((category) => (
-                  <option key={category.category_id} value={category.category_id}>
-                    {category.category_name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-          <label>
-            תאריך רכישה:
-            <input
-              type="date"
-              name="purchaseDate"
-              value={receipt.purchaseDate || ""}
-              onChange={(e) => {
-                const purchaseDate = e.target.value;
-                setReceipt({ ...receipt, purchaseDate, warrantyExpiration: "" });
-              }}
-              max={new Date().toISOString().split("T")[0]}
-            />
-          </label>
-          <label>
-            תוקף אחריות:
-            <input
-              type="date"
-              name="warrantyExpiration"
-              value={receipt.warrantyExpiration || ""}
-              onChange={handleChange}
-              min={receipt.purchaseDate || new Date().toISOString().split("T")[0]}
-            />
-          </label>
-
-          <div className={styles.fileUploadSection}>
-            <label htmlFor="file-upload">העלאת קובץ קבלה:</label>
-            <input
-              type="file"
-              id="file-upload"
-              name="image"
-              onChange={handleFileUpload}
-              ref={fileInputRef}
-            />
-            {receipt.image && (
-              <button type="button" onClick={handleRemoveFile}>
-                מחק קובץ
-              </button>
-            )}
-          </div>
-
-          <div className={styles.reminderSection}>
+      <div className={styles.formContainer}>
+        <h3>{isReminderOnly ? "עריכת תזכורת" : "הוספת/עריכת קבלה"}</h3>
+  
+        {isReminderOnly ? (
+          // הצגת שדה התזכורת בלבד במצב של עריכת תזכורת
+          <div className={styles.reminderSectionOnly}>
             <label htmlFor="reminder">תזכורת:</label>
             <select
               id="reminder"
@@ -217,39 +137,149 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
               <option value="7">שבוע לפני</option>
               <option value="14">שבועיים לפני</option>
             </select>
+            <div className={styles.buttonGroup}>
+              <button onClick={handleSubmit} className={styles.saveButton}>
+                שמור
+              </button>
+            </div>
           </div>
-
-          <div className={styles.buttonGroup}>
-  <button onClick={() => setIsCameraOpen(true)} className={styles.cameraButton}>צלם קבלה</button>
-  <button onClick={handleSubmit} className={styles.saveButton}>שמור</button>
-</div>
-
-        </>
-      )}
-
-{isCameraOpen && (
-  <div className={styles.fullscreenCamera}>
-    <video ref={videoRef} autoPlay className={styles.fullscreenVideo} />
-    <div className={styles.cameraButtons}>
-      <button onClick={handleCapture} className={styles.captureButton}>צלם</button>
-      <button onClick={handleExitCamera} className={styles.exitButton}>ביטול</button>
-    </div>
-  </div>
-)}
-
-
-
-      {photoPreview && (
-        <div>
-          <img src={photoPreview} alt="תצוגת תמונה" className={styles.photoPreview} />
-          <button onClick={handleRetakePhoto} className={styles.retakeButton}>
-            צילום חדש
-          </button>
-        </div>
-      )}
-    </div>
+        ) : (
+          // הטופס המלא במצב של הוספת/עריכת קבלה
+          <>
+            <div className={styles.scanButtonContainer}>
+              <button onClick={handleScanReceipt} disabled={isScanning}>
+                {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
+              </button>
+            </div>
+  
+            <label>
+              שם החנות:
+              <input
+                type="text"
+                name="storeName"
+                value={receipt.storeName || ""}
+                onChange={handleChange}
+              />
+            </label>
+            <label>
+              שם המוצר:
+              <input
+                type="text"
+                name="productName"
+                value={receipt.productName || ""}
+                onChange={handleChange}
+              />
+            </label>
+            <label>
+              קטגוריה:
+              <select
+                name="categoryId"
+                value={receipt.categoryId || ""}
+                onChange={handleChange}
+              >
+                <option value="">בחר קטגוריה</option>
+                {categories.length === 0 ? (
+                  <option disabled>אין קטגוריות זמינות</option>
+                ) : (
+                  categories.map((category) => (
+                    <option key={category.category_id} value={category.category_id}>
+                      {category.category_name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
+            <label>
+              תאריך רכישה:
+              <input
+                type="date"
+                name="purchaseDate"
+                value={receipt.purchaseDate || ""}
+                onChange={(e) => {
+                  const purchaseDate = e.target.value;
+                  setReceipt({ ...receipt, purchaseDate, warrantyExpiration: "" });
+                }}
+                max={new Date().toISOString().split("T")[0]}
+              />
+            </label>
+            <label>
+              תוקף אחריות:
+              <input
+                type="date"
+                name="warrantyExpiration"
+                value={receipt.warrantyExpiration || ""}
+                onChange={handleChange}
+                min={receipt.purchaseDate || new Date().toISOString().split("T")[0]}
+              />
+            </label>
+  
+            <div className={styles.fileUploadSection}>
+              <label htmlFor="file-upload">העלאת קובץ קבלה:</label>
+              <input
+                type="file"
+                id="file-upload"
+                name="image"
+                onChange={handleFileUpload}
+                ref={fileInputRef}
+              />
+              {receipt.image && (
+                <button type="button" onClick={handleRemoveFile}>
+                  מחק קובץ
+                </button>
+              )}
+            </div>
+  
+            <div className={styles.reminderSection}>
+              <label htmlFor="reminder">תזכורת:</label>
+              <select
+                id="reminder"
+                name="reminderDaysBefore"
+                value={receipt.reminderDaysBefore || ""}
+                onChange={handleChange}
+              >
+                <option value="">בחר תזכורת</option>
+                <option value="2">יומיים לפני</option>
+                <option value="7">שבוע לפני</option>
+                <option value="14">שבועיים לפני</option>
+              </select>
+            </div>
+  
+            <div className={styles.buttonGroup}>
+              <button onClick={() => setIsCameraOpen(true)} className={styles.cameraButton}>
+                צלם קבלה
+              </button>
+              <button onClick={handleSubmit} className={styles.saveButton}>
+                שמור
+              </button>
+            </div>
+          </>
+        )}
+  
+        {isCameraOpen && (
+          <div className={styles.fullscreenCamera}>
+            <video ref={videoRef} autoPlay className={styles.fullscreenVideo} />
+            <div className={styles.cameraButtons}>
+              <button onClick={handleCapture} className={styles.captureButton}>
+                צלם
+              </button>
+              <button onClick={handleExitCamera} className={styles.exitButton}>
+                ביטול
+              </button>
+            </div>
+          </div>
+        )}
+  
+        {photoPreview && (
+          <div>
+            <img src={photoPreview} alt="תצוגת תמונה" className={styles.photoPreview} />
+            <button onClick={handleRetakePhoto} className={styles.retakeButton}>
+              צילום חדש
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+  }
 
 export default ReceiptForm;

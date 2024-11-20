@@ -127,9 +127,13 @@ function ReceiptsPage() {
     setNewReceipt({ ...newReceipt, warrantyExpiration: e.target.value });
   };
 
+ 
+
+
   const addOrUpdateReceipt = async (updatedReceipt) => {
     if (isAddingReminder) {
-        await addReminder(editReceiptId);
+        const reminderDaysBefore = updatedReceipt.reminderDaysBefore || null;
+        await addReminder(editReceiptId, reminderDaysBefore); // העברת הערך ישירות
         setShowAddForm(false);
         return;
     }
@@ -144,37 +148,34 @@ function ReceiptsPage() {
     formData.append("reminderDaysBefore", updatedReceipt.reminderDaysBefore || "");
 
     if (updatedReceipt.image) {
-      formData.append("image", updatedReceipt.image);
-  }
-  
+        formData.append("image", updatedReceipt.image);
+    }
 
     try {
         if (isEditing && editReceiptId) {
-            // מבצע עדכון קבלה קיימת
+            // עדכון קבלה קיימת
             const response = await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            
-            // עדכון ה-state עם השינויים שבוצעו בקבלה
+
             setReceipts(
                 receipts.map((receipt) =>
-                    receipt.receipt_id === editReceiptId ? { ...receipt, ...response.data } : receipt
+                    receipt.receipt_id === editReceiptId
+                        ? { ...receipt, reminder_days_before: updatedReceipt.reminderDaysBefore }
+                        : receipt
                 )
             );
-            
             console.log("הקבלה עודכנה בהצלחה");
         } else {
-            // מבצע הוספת קבלה חדשה
+            // הוספת קבלה חדשה
             const response = await axios.post("http://localhost:5000/api/receipts", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            // הוספת הקבלה החדשה ל-state
             setReceipts([...receipts, response.data]);
             console.log("הקבלה נוספה בהצלחה");
         }
 
-        // איפוס השדות והטופס לאחר עדכון או הוספה
         setNewReceipt({
             userId: JSON.parse(localStorage.getItem("userId")),
             categoryId: "",
@@ -195,22 +196,36 @@ function ReceiptsPage() {
 };
 
 
-
   // הוספת תזכורת לקבלה
-  const addReminder = async (receiptId) => {
+  const addReminder = async (receiptId, reminderDaysBefore) => {
     try {
-      await axios.post("http://localhost:5000/api/reminders", {
-        userId: JSON.parse(localStorage.getItem("userId")),
-        receiptId: receiptId,
-        reminderDaysBefore: newReceipt.reminderDaysBefore,
-      });
-      console.log("תזכורת נוספה בהצלחה");
-      fetchReceipts();
-    } catch (error) {
-      console.error("שגיאה בהוספת תזכורת:", error);
-    }
-  };
+        if (!reminderDaysBefore) {
+            console.error("תזכורת לא יכולה להיות ריקה.");
+            return;
+        }
 
+        console.log("נתונים שנשלחים לשרת:", {
+            userId: JSON.parse(localStorage.getItem("userId")),
+            receiptId,
+            reminderDaysBefore,
+        });
+
+        await axios.post("http://localhost:5000/api/reminders", {
+            userId: JSON.parse(localStorage.getItem("userId")),
+            receiptId,
+            reminderDaysBefore,
+        });
+
+        console.log("תזכורת נוספה או עודכנה בהצלחה");
+        fetchReceipts(); // רענון הרשימה של הקבלות
+    } catch (error) {
+        console.error("שגיאה בהוספת או עדכון תזכורת:", error);
+    }
+};
+
+
+
+  
   // עריכת קבלה
   const editReceipt = (receipt) => {
     setIsEditing(true);
@@ -235,31 +250,26 @@ function ReceiptsPage() {
     try {
       await axios.put(`http://localhost:5000/api/receipts/${receiptId}/reminder`);
       console.log("תזכורת נמחקה בהצלחה");
-      fetchReceipts(); // רענון הרשימה לאחר המחיקה
+      fetchReceipts(); // רענון הרשימה
     } catch (error) {
       console.error("שגיאה במחיקת תזכורת:", error);
     }
   };
-
+  
   // עריכת תזכורת קיימת
   const editReminder = (receipt) => {
-    if (editReceiptId === receipt.receipt_id) {
-        // אם לוחצים שוב על התזכורת שנמצאת בעריכה, ייסגר הטופס
-        setIsAddingReminder(false);
-        setEditReceiptId(null);
-        setShowAddForm(false);
-    } else {
-        // אם נבחרה תזכורת חדשה לעריכה, נפתח את הטופס ונעדכן את המצב
-        setIsAddingReminder(true);
-        setEditReceiptId(receipt.receipt_id);
-        setNewReceipt({ reminderDaysBefore: receipt.reminder_days_before || "" });
-        setShowAddForm(true);
-        setShowReceipts(false);
-    }
+    setIsAddingReminder(true);
+    setEditReceiptId(receipt.receipt_id);
+
+    setNewReceipt({
+        reminderDaysBefore: receipt.reminder_days_before || "",
+    });
+
+    setShowAddForm(true);
+    setShowReceipts(false);
 };
 
   
-
   // העברת קבלה לזבל
   const moveToTrash = async (receiptId) => {
     try {
@@ -283,7 +293,6 @@ function ReceiptsPage() {
       console.error("שגיאה בשחזור קבלה:", error);
     }
   };
-
 
   const permanentlyDeleteReceipt = async (receiptId) => {
     try {
@@ -314,8 +323,6 @@ function ReceiptsPage() {
   </button>
 </div>
 
-
-  
       {/* הצגת רשימת הקבלות */}
       {showReceipts && (
   <ReceiptsTable 
@@ -338,46 +345,50 @@ function ReceiptsPage() {
 )}
       {/* הצגת רשימת הקבלות שנמחקו */}
       {showTrash && (
-        <div>
-          <h3>קבלות שנמחקו</h3>
-          {trashReceipts.length === 0 ? (
-            <p>אין קבלות בזבל</p>
-          ) : (
-            <table className={styles.trashTable}>
-              <thead>
-                <tr>
-                  <th>חנות</th>
-                  <th>מוצר</th>
-                  <th>תאריך רכישה</th>
-                  <th>פעולות</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trashReceipts.map((receipt) => (
-                  <tr key={receipt.receipt_id}>
-                    <td>{receipt.store_name}</td>
-                    <td>{receipt.product_name}</td>
-                    <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
-                    <td>
-                      <button onClick={() => restoreReceipt(receipt.receipt_id)}>שחזר</button>
-                      <button onClick={() => permanentlyDeleteReceipt(receipt.receipt_id)}>מחק לצמיתות</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-  
+  <div>
+    <h3>קבלות שנמחקו</h3>
+    {trashReceipts.length === 0 ? (
+      <p>אין קבלות בזבל</p>
+    ) : (
+      <table className={styles.trashTable}>
+        <thead>
+          <tr>
+            <th>חנות</th>
+            <th>מוצר</th>
+            <th>תאריך רכישה</th>
+            <th>פעולות</th>
+          </tr>
+        </thead>
+        <tbody>
+          {trashReceipts.map((receipt) => (
+            <tr key={receipt.receipt_id}>
+              <td>{receipt.store_name}</td>
+              <td>{receipt.product_name}</td>
+              <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
+              <td>
+                <div className={styles.buttonContainer}>
+                  <button onClick={() => restoreReceipt(receipt.receipt_id)}>שחזר</button>
+                  <button onClick={() => permanentlyDeleteReceipt(receipt.receipt_id)}>מחק לצמיתות</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+)}
+
       {/* טופס הוספת קבלה חדשה או תזכורת */}
       {showAddForm && (
-  <ReceiptForm 
-    categories={categories} 
-    onSave={(data) => addOrUpdateReceipt(data)} 
-    receiptData={newReceipt} 
-    isReminderOnly={isAddingReminder} 
-    />
+  <ReceiptForm
+  categories={categories}
+  onSave={(data) => addOrUpdateReceipt(data)}
+  receiptData={newReceipt}
+  isReminderOnly={isAddingReminder}
+  onPurchaseDateChange={handlePurchaseDateChange}
+  onWarrantyExpirationChange={handleWarrantyExpirationChange}
+/>
   )}
 </div>
 );

@@ -1,8 +1,5 @@
-// RemindersList.js
-// הצגת רשימת תזכורות
-
 import React from "react";
-import styles from "../ReceiptsPage.module.css"; // קובץ CSS ייעודי ל-RemindersList
+import styles from "../ReceiptsPage.module.css"; 
 
 function RemindersList({ receipts, editReminder, deleteReminder }) {
   return (

@@ -19,12 +19,17 @@ function RemindersPage() {
     const fetchReminders = async () => {
         try {
             const userId = localStorage.getItem('userId');
+            if (!userId) {
+                console.error("User ID is missing");
+                return;
+            }
             const response = await axios.get(`http://localhost:5000/api/reminders?userId=${userId}`);
             setReminders(response.data);
         } catch (error) {
             console.error("Error fetching reminders:", error);
         }
     };
+    
 
     // הוספת תזכורת חדשה לשרת וריענון הרשימה
     const addReminder = async () => {
