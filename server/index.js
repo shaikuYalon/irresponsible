@@ -9,6 +9,7 @@ import { initializeApp } from 'firebase/app';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from './firebaseConfig.js';
 import path from 'path';
+import { log } from 'console';
 
 
 
@@ -198,6 +199,7 @@ app.post('/api/receipts', upload.single('image'), async (req, res) => {
         // העלאת תמונה לפיירבייס אם יש תמונה
         let imagePath = null;
         if (req.file) {
+            console.log(req.file);
             imagePath = await uploadImageToFirebase(req.file);
         }
 

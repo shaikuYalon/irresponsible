@@ -1,16 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./ReceiptForm.module.css";
-
+import axios from "axios";
+import scanImage from "./openAi";
 function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
-  const [receipt, setReceipt] = useState(receiptData || {
-    storeName: "",
-    productName: "",
-    purchaseDate: "",
-    warrantyExpiration: "",
-    categoryId: "",
-    reminderDaysBefore: "",
-    image: null,
-  });
+  const [receipt, setReceipt] = useState(
+    receiptData || {
+      storeName: "",
+      productName: "",
+      purchaseDate: "",
+      warrantyExpiration: "",
+      categoryId: "",
+      reminderDaysBefore: "",
+      image: null,
+    }
+  );
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -30,7 +33,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
     setReceipt({ ...receipt, [name]: value });
     console.log(`Field ${name} updated to: ${value}`);
   };
-  
+
   useEffect(() => {
     if (isCameraOpen) {
       navigator.mediaDevices
@@ -89,9 +92,12 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
 
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], "captured-image.jpg", { type: "image/jpeg" });
+        const file = new File([blob], "captured-image.jpg", {
+          type: "image/jpeg",
+        });
         setReceipt({ ...receipt, image: file });
         setPhotoPreview(URL.createObjectURL(blob));
+        scanReceipt(file);
       }
       setIsCameraOpen(false);
       stopCamera();
@@ -104,9 +110,10 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   };
 
   const handleScanReceipt = () => {
-    setIsScanning(true);
-    setIsCameraOpen(true);
+    setIsScanning(true); // מעדכן את המצב (state) שהסריקה התחילה
+    setIsCameraOpen(true); // פותח את המצלמה
   };
+  
 
   const handleSubmit = () => {
     const updatedReceipt = {
@@ -116,12 +123,28 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
     console.log("Submitting receipt:", updatedReceipt);
     onSave(updatedReceipt);
   };
+  const scanReceipt = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+        const response = await axios.post("http://localhost:5000/api/upload-image", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        console.log("Image uploaded successfully:", response.data);
+        await scanImage(response.imageUrl); // מעביר את ה-URL ל-OpenAI לסריקה
+    } catch (error) {
+        console.error("Error uploading image:", error);
+    }
+};
 
   return (
     <div className="formContainerWrapper">
       <div className={styles.formContainer}>
         <h3>{isReminderOnly ? "עריכת תזכורת" : "הוספת/עריכת קבלה"}</h3>
-  
+
         {isReminderOnly ? (
           // הצגת שדה התזכורת בלבד במצב של עריכת תזכורת
           <div className={styles.reminderSectionOnly}>
@@ -151,7 +174,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
               </button>
             </div>
-  
+
             <label>
               שם החנות:
               <input
@@ -182,7 +205,10 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                   <option disabled>אין קטגוריות זמינות</option>
                 ) : (
                   categories.map((category) => (
-                    <option key={category.category_id} value={category.category_id}>
+                    <option
+                      key={category.category_id}
+                      value={category.category_id}
+                    >
                       {category.category_name}
                     </option>
                   ))
@@ -197,7 +223,11 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 value={receipt.purchaseDate || ""}
                 onChange={(e) => {
                   const purchaseDate = e.target.value;
-                  setReceipt({ ...receipt, purchaseDate, warrantyExpiration: "" });
+                  setReceipt({
+                    ...receipt,
+                    purchaseDate,
+                    warrantyExpiration: "",
+                  });
                 }}
                 max={new Date().toISOString().split("T")[0]}
               />
@@ -209,10 +239,12 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 name="warrantyExpiration"
                 value={receipt.warrantyExpiration || ""}
                 onChange={handleChange}
-                min={receipt.purchaseDate || new Date().toISOString().split("T")[0]}
+                min={
+                  receipt.purchaseDate || new Date().toISOString().split("T")[0]
+                }
               />
             </label>
-  
+
             <div className={styles.fileUploadSection}>
               <label htmlFor="file-upload">העלאת קובץ קבלה:</label>
               <input
@@ -228,7 +260,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 </button>
               )}
             </div>
-  
+
             <div className={styles.reminderSection}>
               <label htmlFor="reminder">תזכורת:</label>
               <select
@@ -243,9 +275,12 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 <option value="14">שבועיים לפני</option>
               </select>
             </div>
-  
+
             <div className={styles.buttonGroup}>
-              <button onClick={() => setIsCameraOpen(true)} className={styles.cameraButton}>
+              <button
+                onClick={() => setIsCameraOpen(true)}
+                className={styles.cameraButton}
+              >
                 צלם קבלה
               </button>
               <button onClick={handleSubmit} className={styles.saveButton}>
@@ -254,7 +289,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
             </div>
           </>
         )}
-  
+
         {isCameraOpen && (
           <div className={styles.fullscreenCamera}>
             <video ref={videoRef} autoPlay className={styles.fullscreenVideo} />
@@ -268,10 +303,14 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
             </div>
           </div>
         )}
-  
+
         {photoPreview && (
           <div>
-            <img src={photoPreview} alt="תצוגת תמונה" className={styles.photoPreview} />
+            <img
+              src={photoPreview}
+              alt="תצוגת תמונה"
+              className={styles.photoPreview}
+            />
             <button onClick={handleRetakePhoto} className={styles.retakeButton}>
               צילום חדש
             </button>
@@ -280,6 +319,6 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
       </div>
     </div>
   );
-  }
+}
 
 export default ReceiptForm;
