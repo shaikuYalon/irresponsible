@@ -31,7 +31,6 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setReceipt({ ...receipt, [name]: value });
-    console.log(`Field ${name} updated to: ${value}`);
   };
 
   useEffect(() => {
@@ -134,11 +133,19 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
             },
         });
         console.log("Image uploaded successfully:", response.data);
-        await scanImage(response.imageUrl); // מעביר את ה-URL ל-OpenAI לסריקה
+
+        // ודא שה-URL קיים לפני קריאה ל-scanImage
+        const imageUrl = response.data.imageUrl;
+        if (!imageUrl) {
+            throw new Error("Image URL is missing in the response");
+        }
+
+        await scanImage(imageUrl); // מעביר את ה-URL ל-OpenAI לסריקה
     } catch (error) {
         console.error("Error uploading image:", error);
     }
 };
+
 
   return (
     <div className="formContainerWrapper">
@@ -321,4 +328,4 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   );
 }
 
-export default ReceiptForm;
+export default ReceiptForm; 
