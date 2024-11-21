@@ -11,6 +11,8 @@ import { storage } from './firebaseConfig.js';
 import path from 'path';
 import { log } from 'console';
 
+import dotenv from 'dotenv';
+dotenv.config();
 
 
 
@@ -62,11 +64,12 @@ app.post('/contact', async (req, res) => {
     });
     
     const mailOptions = {
-        from: email,
-        to: 'Sh6744998@gmail.com',
+        from: "Sh6744998@gmail.com",
+        to: "Sh6744998@gmail.com",
         subject: `New Contact Form Submission from ${name}`,
         text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`
     };
+    
     try {
         await transporter.sendMail(mailOptions);
         res.status(200).json({ message: 'Email sent successfully!' });

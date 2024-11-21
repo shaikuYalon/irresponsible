@@ -7,21 +7,35 @@ function Contact() {
         email: '',
         message: ''
     });
-    const [message, setMessage] = useState(''); // הודעת הצלחה או ביטול
+    const [message, setMessage] = useState(''); // הודעת הצלחה או שגיאה
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
-        setMessage('ההודעה נשלחה בהצלחה!');
-        setFormData({ name: '', email: '', message: '' });
+        try {
+            const response = await fetch('http://localhost:5000/contact', { // כתובת מלאה של השרת
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                setMessage('ההודעה נשלחה בהצלחה!');
+                setFormData({ name: '', email: '', message: '' }); // ניקוי הטופס
+            } else {
+                throw new Error('שליחת ההודעה נכשלה.');
+            }
+        } catch (error) {
+            setMessage('אירעה שגיאה בשליחת ההודעה. נסה שוב מאוחר יותר.');
+            console.error('Error:', error);
+        }
     };
 
     const handleCancel = () => {
-            window.history.back(); // מחזיר את המשתמש לעמוד הקודם
+        window.history.back(); // מחזיר את המשתמש לעמוד הקודם
     };
 
     return (
@@ -53,7 +67,7 @@ function Contact() {
                 />
                 <div className={styles.buttonGroup}>
                     <button type="submit" className={styles.submitButton}>שלח</button>
-                    <button type="button" onClick={handleCancel} className={styles.submitButton}>ביטול</button>
+                    <button type="button" onClick={handleCancel} className={styles.cancelButton}>ביטול</button>
                 </div>
             </form>
             {message && <p className={styles.message}>{message}</p>}
