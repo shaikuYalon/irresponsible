@@ -2,106 +2,123 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "./ReceiptForm.module.css";
 import axios from "axios";
 import scanImage from "./openAi";
+
 function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
+  // שמירת המידע של הקבלה ב-state
   const [receipt, setReceipt] = useState(
     receiptData || {
-      storeName: "",
-      productName: "",
-      purchaseDate: "",
-      warrantyExpiration: "",
-      categoryId: "",
-      reminderDaysBefore: "",
-      image: null,
+      storeName:  "",
+      productName: "", 
+      purchaseDate: "", 
+      warrantyExpiration: "", 
+      categoryId: "", 
+      reminderDaysBefore: "", 
+      image: null, 
     }
   );
 
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const videoRef = useRef(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false); // האם המצלמה פתוחה
+  const [photoPreview, setPhotoPreview] = useState(null); // תצוגה מקדימה של התמונה
+  const [isScanning, setIsScanning] = useState(false); // סטטוס סריקת התמונה
+  const videoRef = useRef(null); // רפרנס לוידאו של המצלמה
   const fileInputRef = useRef(null); // רפרנס לשדה העלאת הקובץ
 
-  useEffect(() => {
-    if (receiptData) {
-      console.log("Receipt data loaded:", receiptData);
-      setReceipt(receiptData);
-    }
-  }, [receiptData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setReceipt({ ...receipt, [name]: value });
-  };
-
+  // אפקט להפעלת המצלמה או עצירתה בהתבסס על מצב
   useEffect(() => {
     if (isCameraOpen) {
+      // פתיחת המצלמה
       navigator.mediaDevices
         .getUserMedia({ video: true })
         .then((stream) => {
           if (videoRef.current) {
-            videoRef.current.srcObject = stream;
+            videoRef.current.srcObject = stream; // חיבור הזרם לוידאו
           }
         })
         .catch((err) => {
-          console.error("Error accessing camera: ", err);
+          console.error("Error accessing camera: ", err); // טיפול בשגיאות גישה למצלמה
         });
     } else {
+      // עצירת המצלמה אם המצב נסגר
       stopCamera();
     }
   }, [isCameraOpen]);
 
+
+  
+
+  // פונקציה לעדכון שדה ב-state בהתבסס על שינוי
+  const handleChange = (e) => {
+    const { name, value } = e.target; // שם השדה והערך החדש
+    setReceipt({ ...receipt, [name]: value }); // עדכון ה-state
+  };
+
+    // אפקט לעדכון הקבלה ב-state אם התקבלו נתונים חדשים ב-receiptData
+useEffect(() => {
+  console.log("State after Update:", receipt);
+}, [receipt]);
+
+  // פונקציה לעצירת המצלמה
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
-      let stream = videoRef.current.srcObject;
-      let tracks = stream.getTracks();
-      tracks.forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
+      let stream = videoRef.current.srcObject; // הזרם של המצלמה
+      let tracks = stream.getTracks(); // המסלולים של הזרם
+      tracks.forEach((track) => track.stop()); // עצירת כל המסלולים
+      videoRef.current.srcObject = null; // איפוס הזרם
     }
   };
 
+  // פונקציה לצילום תמונה מחדש
   const handleRetakePhoto = () => {
-    setPhotoPreview(null);
-    setIsCameraOpen(true);
+    setPhotoPreview(null); // איפוס התצוגה המקדימה
+    setIsCameraOpen(true); // פתיחת המצלמה מחדש
   };
 
+  // פונקציה לטיפול בהעלאת קובץ
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    setReceipt({ ...receipt, image: file });
-    setPhotoPreview(URL.createObjectURL(file));
-  };
-
-  // פונקציה למחיקת הקובץ והאיפוס של שדה העלאת הקובץ
-  const handleRemoveFile = () => {
-    setReceipt({ ...receipt, image: null });
-    setPhotoPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // איפוס השדה כך שיהיה אפשר לבחור קובץ אחר
+    const file = e.target.files[0]; // קובץ שנבחר
+    if (file) {
+      console.log("File uploaded:", file);
+      setReceipt({ ...receipt, image: file }); // שמירת הקובץ ב-state
+      setPhotoPreview(URL.createObjectURL(file)); // הצגת תצוגה מקדימה
+      scanReceipt(file); // קריאה לפונקציה לסריקת הקובץ
     }
   };
 
+  // פונקציה למחיקת הקובץ ואיפוס שדה העלאת הקובץ
+  const handleRemoveFile = () => {
+    setReceipt({ ...receipt, image: null }); // מחיקת התמונה מה-state
+    setPhotoPreview(null); // איפוס התצוגה המקדימה
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // איפוס שדה העלאת הקובץ
+    }
+  };
+
+  // פונקציה לצילום תמונה ממצלמה
   const handleCapture = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current) return; // אם אין רפרנס לוידאו, לצאת מהפונקציה
 
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const context = canvas.getContext("2d");
+    const canvas = document.createElement("canvas"); // יצירת אלמנט קנבס
+    canvas.width = videoRef.current.videoWidth; // רוחב הוידאו
+    canvas.height = videoRef.current.videoHeight; // גובה הוידאו
+    const context = canvas.getContext("2d"); // יצירת הקשר גרפי
 
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height); // ציור הוידאו על הקנבס
 
     canvas.toBlob((blob) => {
+      // יצירת blob מהקנבס
       if (blob) {
         const file = new File([blob], "captured-image.jpg", {
-          type: "image/jpeg",
+          type: "image/jpeg", // סוג הקובץ
         });
-        setReceipt({ ...receipt, image: file });
-        setPhotoPreview(URL.createObjectURL(blob));
-        scanReceipt(file);
+        setReceipt({ ...receipt, image: file }); // שמירת הקובץ ב-state
+        setPhotoPreview(URL.createObjectURL(blob)); // הצגת תצוגה מקדימה
+        scanReceipt(file); // קריאה לפונקציה לסריקת הקובץ
       }
-      setIsCameraOpen(false);
-      stopCamera();
+      setIsCameraOpen(false); // סגירת המצלמה
+      stopCamera(); // עצירת המצלמה
     }, "image/jpeg");
   };
+
 
   const handleExitCamera = () => {
     setIsCameraOpen(false);
@@ -109,11 +126,10 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   };
 
   const handleScanReceipt = () => {
-    setIsScanning(true); // מעדכן את המצב (state) שהסריקה התחילה
+    setIsScanning(true); // מתחיל את הסריקה
     setIsCameraOpen(true); // פותח את המצלמה
   };
   
-
   const handleSubmit = () => {
     const updatedReceipt = {
       ...receipt,
@@ -122,31 +138,77 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
     console.log("Submitting receipt:", updatedReceipt);
     onSave(updatedReceipt);
   };
+
+  const formatDate = (dateTime) => {
+    if (!dateTime) return "";
+    const datePart = dateTime.split(" ")[0]; // לוקח רק את החלק של התאריך לפני הרווח
+    const [day, month, year] = datePart.split("/");
+    return `${year}-${month}-${day}`; // מחזיר את התאריך בפורמט הנדרש
+  };
+  
+  
+  
   const scanReceipt = async (file) => {
     const formData = new FormData();
     formData.append("image", file);
-
+  
     try {
-        const response = await axios.post("http://localhost:5000/api/upload-image", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
-        console.log("Image uploaded successfully:", response.data);
-
-        // ודא שה-URL קיים לפני קריאה ל-scanImage
-        const imageUrl = response.data.imageUrl;
-        if (!imageUrl) {
-            throw new Error("Image URL is missing in the response");
+      const response = await axios.post(
+        "http://localhost:5000/api/upload-image",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
         }
-
-        await scanImage(imageUrl); // מעביר את ה-URL ל-OpenAI לסריקה
+      );
+  
+      console.log("Image uploaded successfully:", response.data);
+  
+      const imageUrl = response.data.imageUrl;
+      if (!imageUrl) throw new Error("Image URL is missing in the response");
+  
+      // קריאה ל-OpenAI לסריקת התמונה
+      const scannedData = await scanImage(imageUrl);
+      console.log("Scanned Data from AI:", scannedData); // לוג של scannedData
+  
+      if (!scannedData || Object.keys(scannedData).length === 0) {
+        console.error("No data returned from AI.");
+        return;
+      }
+  
+      // עדכון ה-state עם הנתונים מ-scannedData
+      setReceipt((prevReceipt) => {
+        console.log("Previous Receipt State:", prevReceipt);
+        console.log("Scanned Data (raw):", scannedData);
+      
+        const parsedScannedData = JSON.parse(scannedData); // נתונים לאחר פריסה
+        console.log("Parsed Scanned Data:", parsedScannedData);
+      
+        // יצירת עותק מעודכן של ה-state עם הנתונים החדשים
+        const updatedReceipt = {
+          ...prevReceipt, // שמירה על הערכים הקיימים
+          storeName: parsedScannedData.storeName || "", // עדכון רק אם יש ערך
+          productName: parsedScannedData.productName || "",
+          purchaseDate: parsedScannedData.purchaseDate
+            ? formatDate(parsedScannedData.purchaseDate)
+            : prevReceipt.purchaseDate,
+          warrantyExpiration: parsedScannedData.warrantyEndDate
+            ? formatDate(parsedScannedData.warrantyEndDate)
+            : prevReceipt.warrantyExpiration,
+        };
+      
+        console.log("Updated Receipt in State:", updatedReceipt);
+        return updatedReceipt;
+      });
+      
+      
     } catch (error) {
-        console.error("Error uploading image:", error);
+      console.error("Error uploading or scanning the image:", error);
+    } finally {
+      setIsScanning(false);
+      setIsCameraOpen(false); // סיום תהליך המצלמה
     }
-};
-
-
+  };
+  
   return (
     <div className="formContainerWrapper">
       <div className={styles.formContainer}>
@@ -177,20 +239,22 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
           // הטופס המלא במצב של הוספת/עריכת קבלה
           <>
             <div className={styles.scanButtonContainer}>
-              <button onClick={handleScanReceipt} disabled={isScanning}>
-                {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
-              </button>
+             <button onClick={handleScanReceipt} disabled={isScanning}>
+  {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
+</button>
+
             </div>
 
             <label>
-              שם החנות:
-              <input
-                type="text"
-                name="storeName"
-                value={receipt.storeName || ""}
-                onChange={handleChange}
-              />
-            </label>
+  שם החנות:
+  <input
+    type="text"
+    name="storeName"
+    value={receipt.storeName || ""} // מחובר לערך ב-state
+    onChange={handleChange} // מעדכן את ה-state במקרה של שינוי ידני
+  />
+</label>
+
             <label>
               שם המוצר:
               <input

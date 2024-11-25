@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom"; // שימוש ב-useLocation
 import axios from "axios";
 import ReceiptsTable from "./utils/ReceiptsTable";
 import RemindersList from "./utils/RemindersList";
@@ -8,6 +9,7 @@ import styles from "./ReceiptsPage.module.css";
 
 function ReceiptsPage() {
   // הגדרת מצבים שונים לשמירת הנתונים ולהצגת התצוגות
+  const location = useLocation(); // קבלת המידע שהועבר
   const [receipts, setReceipts] = useState([]); // רשימת הקבלות
   const [categories, setCategories] = useState([]); // רשימת הקטגוריות
   const [trashReceipts, setTrashReceipts] = useState([]); // קבלות שנמחקו
@@ -62,11 +64,19 @@ function ReceiptsPage() {
     }
   };
 
-  // הפעלת שליפות של קטגוריות וקבלות שנמחקו בעת טעינת הקומפוננטה
   useEffect(() => {
     fetchCategories();
     fetchTrashReceipts();
-  }, []);
+  
+    // בדיקת פרמטרים מ-location לפתיחת טופס אוטומטי
+    if (location.state?.openAddForm) {
+      setShowAddForm(true); // פותח את הטופס אוטומטית אם הפרמטר הועבר
+    }
+  }, [location.state]); // תלוי ב-location.state
+  
+  
+
+  
 
   // הצגת רשימת קבלות והסתרת תצוגות אחרות
   const toggleReceipts = () => {

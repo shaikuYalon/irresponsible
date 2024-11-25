@@ -49,3 +49,27 @@
 .logoutButton:hover {
     background-color: #c82333;
 }
+
+.addReceiptButton {
+    position: absolute;
+    top: 80px; /* מרחק מלמעלה - מתחת ל-Navigation Bar */
+    right: 20px; /* מרחק מצד ימין */
+    width: 50px; /* רוחב הכפתור */
+    height: 50px; /* גובה הכפתור */
+    background-color: #6b8e23; /* צבע רקע ירוק זית */
+    color: white; /* צבע טקסט */
+    border: none; /* ללא גבול */
+    border-radius: 50%; /* עיגול */
+    font-size: 24px; /* גודל הטקסט */
+    font-weight: bold; /* טקסט מודגש */
+    cursor: pointer; /* סמן כפתור */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* צל */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.addReceiptButton:hover {
+    background-color: #556b2f; /* גוון כהה יותר של ירוק */
+}
