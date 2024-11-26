@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "./ReceiptForm.module.css";
 import axios from "axios";
 import scanImage from "./openAi";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";//המרת PDF לתמונה
+
+// הגדר את ה-workerSrc
+GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 
 function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   // שמירת המידע של הקבלה ב-state
@@ -20,6 +24,9 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   const [isCameraOpen, setIsCameraOpen] = useState(false); // האם המצלמה פתוחה
   const [photoPreview, setPhotoPreview] = useState(null); // תצוגה מקדימה של התמונה
   const [isScanning, setIsScanning] = useState(false); // סטטוס סריקת התמונה
+  const [shouldScanAfterCapture, setShouldScanAfterCapture] = useState(false); // דגל לסריקה אחרי צילום
+  const [showScanDialog, setShowScanDialog] = useState(false); // דיאלוג לסריקה
+
   const videoRef = useRef(null); // רפרנס לוידאו של המצלמה
   const fileInputRef = useRef(null); // רפרנס לשדה העלאת הקובץ
 
@@ -73,16 +80,78 @@ useEffect(() => {
     setIsCameraOpen(true); // פתיחת המצלמה מחדש
   };
 
+  
+
+const convertPdfToImage = async (pdfFile) => {
+  try {
+    const fileReader = new FileReader();
+
+    fileReader.onload = async () => {
+      const pdfData = new Uint8Array(fileReader.result);
+      const pdfDoc = await getDocument({ data: pdfData }).promise;
+      const page = await pdfDoc.getPage(1); // לוקח את הדף הראשון
+
+      const viewport = page.getViewport({ scale: 1 });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+
+      await page.render(renderContext).promise;
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const imageFile = new File([blob], "converted-image.jpeg", {
+            type: "image/jpeg",
+          });
+          setReceipt({ ...receipt, image: imageFile }); // שמירת התמונה
+          setPhotoPreview(URL.createObjectURL(blob)); // הצגת תצוגה מקדימה
+          setShowScanDialog(true); // הצגת דיאלוג לסריקה
+        }
+      }, "image/jpeg");
+    };
+
+    fileReader.readAsArrayBuffer(pdfFile);
+  } catch (error) {
+    console.error("Error converting PDF to image:", error);
+  }
+};
+
+
   // פונקציה לטיפול בהעלאת קובץ
   const handleFileUpload = (e) => {
-    const file = e.target.files[0]; // קובץ שנבחר
-    if (file) {
-      console.log("File uploaded:", file);
-      setReceipt({ ...receipt, image: file }); // שמירת הקובץ ב-state
-      setPhotoPreview(URL.createObjectURL(file)); // הצגת תצוגה מקדימה
-      scanReceipt(file); // קריאה לפונקציה לסריקת הקובץ
+    const file = e.target.files[0];
+    if (!file) return;
+  
+    const fileType = file.type;
+    console.log("Uploaded file type:", fileType);
+  
+    if (fileType === "application/pdf") {
+      // אם הקובץ הוא PDF, בצע המרה לתמונה
+      convertPdfToImage(file);
+    } else {
+      // אם הקובץ הוא תמונה רגילה, שמור אותו
+      setReceipt({ ...receipt, image: file });
+      setPhotoPreview(URL.createObjectURL(file));
+      setShowScanDialog(true); // הצגת דיאלוג לסריקה
     }
   };
+  
+  
+
+  const handleScanConfirmation = (confirm) => {
+    setShowScanDialog(false); // סגור את הדיאלוג
+    if (confirm && receipt.image) {
+      scanReceipt(receipt.image); // אם המשתמש מאשר, בצע סריקה
+    }
+  };
+  
 
   // פונקציה למחיקת הקובץ ואיפוס שדה העלאת הקובץ
   const handleRemoveFile = () => {
@@ -96,39 +165,39 @@ useEffect(() => {
   // פונקציה לצילום תמונה ממצלמה
   const handleCapture = () => {
     if (!videoRef.current) return; // אם אין רפרנס לוידאו, לצאת מהפונקציה
-
+  
     const canvas = document.createElement("canvas"); // יצירת אלמנט קנבס
     canvas.width = videoRef.current.videoWidth; // רוחב הוידאו
     canvas.height = videoRef.current.videoHeight; // גובה הוידאו
     const context = canvas.getContext("2d"); // יצירת הקשר גרפי
-
+  
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height); // ציור הוידאו על הקנבס
-
+  
     canvas.toBlob((blob) => {
-      // יצירת blob מהקנבס
       if (blob) {
         const file = new File([blob], "captured-image.jpg", {
-          type: "image/jpeg", // סוג הקובץ
+          type: "image/jpeg",
         });
         setReceipt({ ...receipt, image: file }); // שמירת הקובץ ב-state
         setPhotoPreview(URL.createObjectURL(blob)); // הצגת תצוגה מקדימה
-        scanReceipt(file); // קריאה לפונקציה לסריקת הקובץ
+  
+        // אם הדגל shouldScanAfterCapture מופעל, מבצע סריקה
+        if (shouldScanAfterCapture) {
+          scanReceipt(file); // קריאה לפונקציית הסריקה
+        }
       }
       setIsCameraOpen(false); // סגירת המצלמה
       stopCamera(); // עצירת המצלמה
     }, "image/jpeg");
   };
-
+  
 
   const handleExitCamera = () => {
     setIsCameraOpen(false);
     stopCamera();
   };
 
-  const handleScanReceipt = () => {
-    setIsScanning(true); // מתחיל את הסריקה
-    setIsCameraOpen(true); // פותח את המצלמה
-  };
+ 
   
   const handleSubmit = () => {
     const updatedReceipt = {
@@ -239,11 +308,17 @@ useEffect(() => {
           // הטופס המלא במצב של הוספת/עריכת קבלה
           <>
             <div className={styles.scanButtonContainer}>
-             <button onClick={handleScanReceipt} disabled={isScanning}>
-  {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
-</button>
+  <button
+    onClick={() => {
+      setShouldScanAfterCapture(true); // להפעיל סריקה אחרי צילום
+      setIsCameraOpen(true); // לפתוח את המצלמה
+    }}
+    disabled={isScanning}
+  >
+    {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
+  </button>
+</div>
 
-            </div>
 
             <label>
   שם החנות:
@@ -348,12 +423,16 @@ useEffect(() => {
             </div>
 
             <div className={styles.buttonGroup}>
-              <button
-                onClick={() => setIsCameraOpen(true)}
-                className={styles.cameraButton}
-              >
-                צלם קבלה
-              </button>
+            <button
+  onClick={() => {
+    setShouldScanAfterCapture(false); // לא לבצע סריקה אחרי צילום
+    setIsCameraOpen(true); // לפתוח את המצלמה
+  }}
+  className={styles.cameraButton}
+>
+  צלם קבלה
+</button>
+
               <button onClick={handleSubmit} className={styles.saveButton}>
                 שמור
               </button>
@@ -374,6 +453,15 @@ useEffect(() => {
             </div>
           </div>
         )}
+
+{showScanDialog && (
+  <div className={styles.dialog}>
+    <p>האם ברצונך למלא פרטים אוטומטית מהסריקה?</p>
+    <button onClick={() => handleScanConfirmation(true)}>כן</button>
+    <button onClick={() => handleScanConfirmation(false)}>לא</button>
+  </div>
+)}
+
 
         {photoPreview && (
           <div>
