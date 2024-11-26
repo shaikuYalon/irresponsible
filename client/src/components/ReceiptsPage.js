@@ -89,23 +89,31 @@ function ReceiptsPage() {
 
   // הצגת טופס הוספת קבלה והסתרת תצוגות אחרות
   const toggleAddForm = () => {
-    setShowAddForm(!showAddForm);
-    setShowReceipts(false);
-    setShowReminders(false);
-    setShowTrash(false);
-    setIsEditing(false);
-    setIsAddingReminder(false);
-    setNewReceipt({
-      userId: JSON.parse(localStorage.getItem("userId")),
-      categoryId: "",
-      storeName: "",
-      purchaseDate: "",
-      productName: "",
-      warrantyExpiration: "",
-      image: null,
-      reminderDaysBefore: "",
-    });
+    if (isEditing) {
+      // ביטול עריכה והצגת הקבלות
+      setIsEditing(false);
+      setShowAddForm(false);
+      setShowReceipts(true); // הצגת הקבלות
+    } else {
+      // מצב של הוספת קבלה חדשה
+      setShowAddForm(!showAddForm);
+      setShowReceipts(false);
+      setShowReminders(false);
+      setShowTrash(false);
+      setIsAddingReminder(false);
+      setNewReceipt({
+        userId: JSON.parse(localStorage.getItem("userId")),
+        categoryId: "",
+        storeName: "",
+        purchaseDate: "",
+        productName: "",
+        warrantyExpiration: "",
+        image: null,
+        reminderDaysBefore: "",
+      });
+    }
   };
+  
 
   // הצגת תזכורות והסתרת תצוגות אחרות
   const toggleReminders = () => {
@@ -145,6 +153,7 @@ function ReceiptsPage() {
         const reminderDaysBefore = updatedReceipt.reminderDaysBefore || null;
         await addReminder(editReceiptId, reminderDaysBefore); // העברת הערך ישירות
         setShowAddForm(false);
+        setShowReceipts(true); // הצגת כל הקבלות לאחר שמירה
         return;
     }
 
@@ -164,8 +173,7 @@ function ReceiptsPage() {
     try {
         if (isEditing && editReceiptId) {
             // עדכון קבלה קיימת
-            const response = await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
+const response = await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {                headers: { "Content-Type": "multipart/form-data" },
             });
 
             setReceipts(
@@ -198,11 +206,14 @@ function ReceiptsPage() {
         });
 
         setShowAddForm(false);
+        setShowReceipts(true); // הצגת כל הקבלות לאחר שמירה
         setIsEditing(false);
         setEditReceiptId(null);
     } catch (error) {
         console.error("שגיאה בהוספה או עדכון הקבלה:", error);
     }
+    // רענון הרשימה מהשרת
+fetchReceipts(); 
 };
 
 
@@ -323,8 +334,14 @@ function ReceiptsPage() {
     {showReceipts ? "הסתר קבלות" : "הצגת כל הקבלות"}
   </button>
   <button className={styles.actionButton + ' ' + styles.addFormButton} onClick={toggleAddForm}>
-    {showAddForm ? "ביטול הוספת קבלה" : "הוספת קבלה חדשה"}
-  </button>
+  {isEditing 
+    ? "ביטול עריכה" 
+    : showAddForm 
+      ? "ביטול הוספת קבלה" 
+      : "הוספת קבלה חדשה"}
+</button>
+
+
   <button className={styles.actionButton + ' ' + styles.remindersButton} onClick={toggleReminders}>
     {showReminders ? "הסתר תזכורות" : "הצגת כל התזכורות"}
   </button>
