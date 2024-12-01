@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "./ReceiptForm.module.css";
 import axios from "axios";
 import scanImage from "./openAi";
-import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";//המרת PDF לתמונה
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist"; //המרת PDF לתמונה
+import ScanPop from "./ScanPop";
 
 // הגדר את ה-workerSrc
 GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
@@ -11,13 +12,15 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   // שמירת המידע של הקבלה ב-state
   const [receipt, setReceipt] = useState(
     receiptData || {
-      storeName:  "",
-      productName: "", 
-      purchaseDate: "", 
-      warrantyExpiration: "", 
-      categoryId: "", 
-      reminderDaysBefore: "", 
-      image: null, 
+      storeName: "",
+      productName: "",
+      price: "",
+      purchaseDate: "",
+      warrantyExpiration: "",
+      categoryId: "",
+      reminderDaysBefore: "",
+      image: null,
+      receiptNumber: "",
     }
   );
 
@@ -26,6 +29,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   const [isScanning, setIsScanning] = useState(false); // סטטוס סריקת התמונה
   const [shouldScanAfterCapture, setShouldScanAfterCapture] = useState(false); // דגל לסריקה אחרי צילום
   const [showScanDialog, setShowScanDialog] = useState(false); // דיאלוג לסריקה
+  const [errors, setErrors] = useState({});
 
   const videoRef = useRef(null); // רפרנס לוידאו של המצלמה
   const fileInputRef = useRef(null); // רפרנס לשדה העלאת הקובץ
@@ -50,19 +54,16 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
     }
   }, [isCameraOpen]);
 
-
-  
-
   // פונקציה לעדכון שדה ב-state בהתבסס על שינוי
   const handleChange = (e) => {
     const { name, value } = e.target; // שם השדה והערך החדש
     setReceipt({ ...receipt, [name]: value }); // עדכון ה-state
   };
 
-    // אפקט לעדכון הקבלה ב-state אם התקבלו נתונים חדשים ב-receiptData
-useEffect(() => {
-  console.log("State after Update:", receipt);
-}, [receipt]);
+  // אפקט לעדכון הקבלה ב-state אם התקבלו נתונים חדשים ב-receiptData
+  useEffect(() => {
+    console.log("State after Update:", receipt);
+  }, [receipt]);
 
   // פונקציה לעצירת המצלמה
   const stopCamera = () => {
@@ -80,58 +81,55 @@ useEffect(() => {
     setIsCameraOpen(true); // פתיחת המצלמה מחדש
   };
 
-  
+  const convertPdfToImage = async (pdfFile) => {
+    try {
+      const fileReader = new FileReader();
 
-const convertPdfToImage = async (pdfFile) => {
-  try {
-    const fileReader = new FileReader();
+      fileReader.onload = async () => {
+        const pdfData = new Uint8Array(fileReader.result);
+        const pdfDoc = await getDocument({ data: pdfData }).promise;
+        const page = await pdfDoc.getPage(1); // לוקח את הדף הראשון
 
-    fileReader.onload = async () => {
-      const pdfData = new Uint8Array(fileReader.result);
-      const pdfDoc = await getDocument({ data: pdfData }).promise;
-      const page = await pdfDoc.getPage(1); // לוקח את הדף הראשון
+        const viewport = page.getViewport({ scale: 1 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
 
-      const viewport = page.getViewport({ scale: 1 });
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
 
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport,
+        await page.render(renderContext).promise;
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const imageFile = new File([blob], "converted-image.jpeg", {
+              type: "image/jpeg",
+            });
+            setReceipt({ ...receipt, image: imageFile }); // שמירת התמונה
+            setPhotoPreview(URL.createObjectURL(blob)); // הצגת תצוגה מקדימה
+            setShowScanDialog(true); // הצגת דיאלוג לסריקה
+          }
+        }, "image/jpeg");
       };
 
-      await page.render(renderContext).promise;
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const imageFile = new File([blob], "converted-image.jpeg", {
-            type: "image/jpeg",
-          });
-          setReceipt({ ...receipt, image: imageFile }); // שמירת התמונה
-          setPhotoPreview(URL.createObjectURL(blob)); // הצגת תצוגה מקדימה
-          setShowScanDialog(true); // הצגת דיאלוג לסריקה
-        }
-      }, "image/jpeg");
-    };
-
-    fileReader.readAsArrayBuffer(pdfFile);
-  } catch (error) {
-    console.error("Error converting PDF to image:", error);
-  }
-};
-
+      fileReader.readAsArrayBuffer(pdfFile);
+    } catch (error) {
+      console.error("Error converting PDF to image:", error);
+    }
+  };
 
   // פונקציה לטיפול בהעלאת קובץ
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
+
     const fileType = file.type;
     console.log("Uploaded file type:", fileType);
-  
+
     if (fileType === "application/pdf") {
       // אם הקובץ הוא PDF, בצע המרה לתמונה
       convertPdfToImage(file);
@@ -142,8 +140,6 @@ const convertPdfToImage = async (pdfFile) => {
       setShowScanDialog(true); // הצגת דיאלוג לסריקה
     }
   };
-  
-  
 
   const handleScanConfirmation = (confirm) => {
     setShowScanDialog(false); // סגור את הדיאלוג
@@ -151,7 +147,6 @@ const convertPdfToImage = async (pdfFile) => {
       scanReceipt(receipt.image); // אם המשתמש מאשר, בצע סריקה
     }
   };
-  
 
   // פונקציה למחיקת הקובץ ואיפוס שדה העלאת הקובץ
   const handleRemoveFile = () => {
@@ -165,14 +160,14 @@ const convertPdfToImage = async (pdfFile) => {
   // פונקציה לצילום תמונה ממצלמה
   const handleCapture = () => {
     if (!videoRef.current) return; // אם אין רפרנס לוידאו, לצאת מהפונקציה
-  
+
     const canvas = document.createElement("canvas"); // יצירת אלמנט קנבס
     canvas.width = videoRef.current.videoWidth; // רוחב הוידאו
     canvas.height = videoRef.current.videoHeight; // גובה הוידאו
     const context = canvas.getContext("2d"); // יצירת הקשר גרפי
-  
+
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height); // ציור הוידאו על הקנבס
-  
+
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], "captured-image.jpg", {
@@ -180,7 +175,7 @@ const convertPdfToImage = async (pdfFile) => {
         });
         setReceipt({ ...receipt, image: file }); // שמירת הקובץ ב-state
         setPhotoPreview(URL.createObjectURL(blob)); // הצגת תצוגה מקדימה
-  
+
         // אם הדגל shouldScanAfterCapture מופעל, מבצע סריקה
         if (shouldScanAfterCapture) {
           scanReceipt(file); // קריאה לפונקציית הסריקה
@@ -190,22 +185,32 @@ const convertPdfToImage = async (pdfFile) => {
       stopCamera(); // עצירת המצלמה
     }, "image/jpeg");
   };
-  
 
   const handleExitCamera = () => {
     setIsCameraOpen(false);
     stopCamera();
   };
 
- 
-  
   const handleSubmit = () => {
-    const updatedReceipt = {
-      ...receipt,
-      categoryId: receipt.categoryId || null,
-    };
-    console.log("Submitting receipt:", updatedReceipt);
-    onSave(updatedReceipt);
+    const newErrors = {};
+
+    // בדיקת שדות חובה
+    if (!receipt.storeName.trim()) {
+      newErrors.storeName = "שם החנות הוא שדה חובה";
+    }
+
+    if (!receipt.productName.trim()) {
+      newErrors.productName = "שם המוצר הוא שדה חובה";
+    }
+
+    // אם יש שגיאות, הצגתן והפסקת השליחה
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({}); // אפס שגיאות אם הכל תקין
+    onSave(receipt); // קריאה לפונקציה לשמירת הקבלה
   };
 
   const formatDate = (dateTime) => {
@@ -214,13 +219,11 @@ const convertPdfToImage = async (pdfFile) => {
     const [day, month, year] = datePart.split("/");
     return `${year}-${month}-${day}`; // מחזיר את התאריך בפורמט הנדרש
   };
-  
-  
-  
+
   const scanReceipt = async (file) => {
     const formData = new FormData();
     formData.append("image", file);
-  
+
     try {
       const response = await axios.post(
         "http://localhost:5000/api/upload-image",
@@ -229,34 +232,36 @@ const convertPdfToImage = async (pdfFile) => {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
-  
+
       console.log("Image uploaded successfully:", response.data);
-  
+
       const imageUrl = response.data.imageUrl;
       if (!imageUrl) throw new Error("Image URL is missing in the response");
-  
+
       // קריאה ל-OpenAI לסריקת התמונה
       const scannedData = await scanImage(imageUrl);
       console.log("Scanned Data from AI:", scannedData); // לוג של scannedData
-  
+
       if (!scannedData || Object.keys(scannedData).length === 0) {
         console.error("No data returned from AI.");
         return;
       }
-  
+
       // עדכון ה-state עם הנתונים מ-scannedData
       setReceipt((prevReceipt) => {
         console.log("Previous Receipt State:", prevReceipt);
         console.log("Scanned Data (raw):", scannedData);
-      
+
         const parsedScannedData = JSON.parse(scannedData); // נתונים לאחר פריסה
         console.log("Parsed Scanned Data:", parsedScannedData);
-      
+
         // יצירת עותק מעודכן של ה-state עם הנתונים החדשים
         const updatedReceipt = {
           ...prevReceipt, // שמירה על הערכים הקיימים
           storeName: parsedScannedData.storeName || "", // עדכון רק אם יש ערך
           productName: parsedScannedData.productName || "",
+          price: parsedScannedData.price || "",
+          receiptNumber: parsedScannedData.receiptNumber || "",
           purchaseDate: parsedScannedData.purchaseDate
             ? formatDate(parsedScannedData.purchaseDate)
             : prevReceipt.purchaseDate,
@@ -264,12 +269,10 @@ const convertPdfToImage = async (pdfFile) => {
             ? formatDate(parsedScannedData.warrantyEndDate)
             : prevReceipt.warrantyExpiration,
         };
-      
+
         console.log("Updated Receipt in State:", updatedReceipt);
         return updatedReceipt;
       });
-      
-      
     } catch (error) {
       console.error("Error uploading or scanning the image:", error);
     } finally {
@@ -277,7 +280,7 @@ const convertPdfToImage = async (pdfFile) => {
       setIsCameraOpen(false); // סיום תהליך המצלמה
     }
   };
-  
+
   return (
     <div className="formContainerWrapper">
       <div className={styles.formContainer}>
@@ -308,27 +311,30 @@ const convertPdfToImage = async (pdfFile) => {
           // הטופס המלא במצב של הוספת/עריכת קבלה
           <>
             <div className={styles.scanButtonContainer}>
-  <button
-    onClick={() => {
-      setShouldScanAfterCapture(true); // להפעיל סריקה אחרי צילום
-      setIsCameraOpen(true); // לפתוח את המצלמה
-    }}
-    disabled={isScanning}
-  >
-    {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
-  </button>
-</div>
-
+              <button
+                onClick={() => {
+                  setShouldScanAfterCapture(true); // להפעיל סריקה אחרי צילום
+                  setIsCameraOpen(true); // לפתוח את המצלמה
+                }}
+                disabled={isScanning}
+              >
+                {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
+              </button>
+            </div>
 
             <label>
-  שם החנות:
-  <input
-    type="text"
-    name="storeName"
-    value={receipt.storeName || ""} // מחובר לערך ב-state
-    onChange={handleChange} // מעדכן את ה-state במקרה של שינוי ידני
-  />
-</label>
+              שם החנות:
+              <input
+                type="text"
+                name="storeName"
+                value={receipt.storeName || ""}
+                onChange={handleChange}
+                placeholder="הכנס שם החנות"
+              />
+              {errors.storeName && (
+                <p className={styles.errorText}>{errors.storeName}</p>
+              )}
+            </label>
 
             <label>
               שם המוצר:
@@ -337,6 +343,27 @@ const convertPdfToImage = async (pdfFile) => {
                 name="productName"
                 value={receipt.productName || ""}
                 onChange={handleChange}
+                placeholder="הכנס שם המוצר"
+              />
+              {errors.productName && (
+                <p className={styles.errorText}>{errors.productName}</p>
+              )}
+            </label>
+
+            <label>
+              עלות המוצר:
+              <input
+                type="text" // שמירה על type="text" כדי להסיר את החיצים
+                name="price"
+                value={receipt.price || ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // מניעת הזנת ערכים שאינם מספרים חיוביים או עשרוניים
+                  if (/^\d*\.?\d*$/.test(value)) {
+                    setReceipt({ ...receipt, price: value });
+                  }
+                }}
+                placeholder="הכנס מחיר"
               />
             </label>
             <label>
@@ -390,7 +417,16 @@ const convertPdfToImage = async (pdfFile) => {
                 }
               />
             </label>
-
+            <label>
+              מספר קבלה:
+              <input
+                type="text"
+                name="receiptNumber"
+                value={receipt.receiptNumber || ""}
+                onChange={handleChange}
+                placeholder="הכנס מספר קבלה"
+              />
+            </label>
             <div className={styles.fileUploadSection}>
               <label htmlFor="file-upload">העלאת קובץ קבלה:</label>
               <input
@@ -423,15 +459,15 @@ const convertPdfToImage = async (pdfFile) => {
             </div>
 
             <div className={styles.buttonGroup}>
-            <button
-  onClick={() => {
-    setShouldScanAfterCapture(false); // לא לבצע סריקה אחרי צילום
-    setIsCameraOpen(true); // לפתוח את המצלמה
-  }}
-  className={styles.cameraButton}
->
-  צלם קבלה
-</button>
+              <button
+                onClick={() => {
+                  setShouldScanAfterCapture(false); // לא לבצע סריקה אחרי צילום
+                  setIsCameraOpen(true); // לפתוח את המצלמה
+                }}
+                className={styles.cameraButton}
+              >
+                צלם קבלה
+              </button>
 
               <button onClick={handleSubmit} className={styles.saveButton}>
                 שמור
@@ -453,16 +489,14 @@ const convertPdfToImage = async (pdfFile) => {
             </div>
           </div>
         )}
-
-{showScanDialog && (
-  <div className={styles.dialog}>
-    <p>האם ברצונך למלא פרטים אוטומטית מהסריקה?</p>
-    <button onClick={() => handleScanConfirmation(true)}>כן</button>
-    <button onClick={() => handleScanConfirmation(false)}>לא</button>
-  </div>
-)}
-
-
+        <ScanPop
+          open={showScanDialog}
+          onClose={() => setShowScanDialog(false)}
+          onConfirm={(confirmed) => {
+            handleScanConfirmation(confirmed);
+            setShowScanDialog(false);
+          }}
+        />
         {photoPreview && (
           <div>
             <img
@@ -480,4 +514,4 @@ const convertPdfToImage = async (pdfFile) => {
   );
 }
 
-export default ReceiptForm; 
+export default ReceiptForm;

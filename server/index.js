@@ -195,8 +195,15 @@ app.post('/api/reminders', (req, res) => {
 
 // הוספת קבלה חדשה   
 app.post('/api/receipts', upload.single('image'), async (req, res) => {
-    const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
+    const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, price, receiptNumber } = req.body;
     const categoryId = parseInt(req.body.categoryId, 10) || null;
+
+    // בדיקת שדות חובה: רק storeName ו-productName
+if (!storeName || !productName) {
+    return res.status(400).json({ 
+        error: "Both 'storeName' and 'productName' are required fields." 
+    });
+}
 
     try {
         // העלאת תמונה לפיירבייס אם יש תמונה
@@ -207,9 +214,19 @@ app.post('/api/receipts', upload.single('image'), async (req, res) => {
         }
 
         // הוספת הקבלה ל-DB
-        const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, imagePath];
-
+        const sql = 'INSERT INTO Receipts (user_id, category_id, store_name, purchase_date, product_name, warranty_expiration, image_path, price, receipt_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [
+            userId,
+            categoryId || null,
+            storeName,
+            purchaseDate || null,
+            productName,
+            warrantyExpiration || null,
+            imagePath || null,
+            price || null,
+            receiptNumber || null
+        ];
+        
         connection.query(sql, params, (err, result) => {
             if (err) {
                 console.error("Error adding receipt:", err);
@@ -250,13 +267,14 @@ app.post('/api/receipts', upload.single('image'), async (req, res) => {
         console.error("Error processing receipt:", error);
         res.status(500).json({ error: "Failed to process receipt" });
     }
-});
+}); 
+
 
 
 app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
     const { id } = req.params;
-    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore } = req.body;
-    console.log(userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, id);
+    const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, price, receiptNumber } = req.body;
+    console.log(userId, categoryId, storeName, purchaseDate, productName, price, receiptNumber, warrantyExpiration, reminderDaysBefore, id);
     try {
         let newImagePath = null;
 
@@ -286,20 +304,22 @@ app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
         // עדכון הקבלה בטבלת Receipts
         const sql = `
             UPDATE Receipts 
-            SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? 
+            SET user_id = ?, category_id = ?, store_name = ?, purchase_date = ?, product_name = ?, price = ?, receipt_number = ?, warranty_expiration = ?, image_path = ?, reminder_days_before = ? 
             WHERE receipt_id = ?
         `;
         const params = [
             userId,
-            categoryId,
+            categoryId || null,
             storeName,
-            purchaseDate,
+            purchaseDate || null,
             productName,
-            warrantyExpiration,
-            newImagePath || null, // אם אין תמונה חדשה, השאר את הקיימת
-            reminderDaysBefore || null,
-            id,
+            warrantyExpiration || null,
+            newImagePath || null,
+            price || null,
+            receiptNumber || null
         ];
+        
+          
 
         connection.query(sql, params, (err) => {
             if (err) {

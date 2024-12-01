@@ -6,15 +6,11 @@ function HomePage() {
     const navigate = useNavigate();
 
     const goToRegister = () => {
-        navigate('/register');
+        navigate('/register'); 
     };
 
     const goToLogin = () => {
         navigate('/login');
-    };
-
-    const goToContact = () => {
-        navigate('/contact');
     };
 
     return (

@@ -53,3 +53,11 @@ button:hover {
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     z-index: 1;
 }
+
+
+
+.logout-button:hover {
+    background-color: #ff4d4d; /* צבע אדום כהה יותר במעבר עכבר */
+    color: white;
+}
+

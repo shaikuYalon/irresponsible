@@ -19,6 +19,8 @@ function ReceiptsPage() {
     storeName: "",
     purchaseDate: "",
     productName: "",
+    price: "",
+    reciptNumber: "",
     warrantyExpiration: "",
     image: null,
     reminderDaysBefore: "",
@@ -103,13 +105,15 @@ function ReceiptsPage() {
       setIsAddingReminder(false);
       setNewReceipt({
         userId: JSON.parse(localStorage.getItem("userId")),
-        categoryId: "",
+        categoryId: null,
         storeName: "",
-        purchaseDate: "",
+        purchaseDate: null,
         productName: "",
-        warrantyExpiration: "",
+        price: null,
+        receiptNumber: null,
+        warrantyExpiration: null,
         image: null,
-        reminderDaysBefore: "",
+        reminderDaysBefore: null,
       });
     }
   };
@@ -163,6 +167,8 @@ function ReceiptsPage() {
     formData.append("storeName", updatedReceipt.storeName || "");
     formData.append("purchaseDate", updatedReceipt.purchaseDate || "");
     formData.append("productName", updatedReceipt.productName || "");
+    formData.append("price", updatedReceipt.price || "");
+    formData.append("receiptNumber", updatedReceipt.receiptNumber || "");
     formData.append("warrantyExpiration", updatedReceipt.warrantyExpiration || "");
     formData.append("reminderDaysBefore", updatedReceipt.reminderDaysBefore || "");
 
@@ -200,6 +206,8 @@ const response = await axios.put(`http://localhost:5000/api/receipts/${editRecei
             storeName: "",
             purchaseDate: "",
             productName: "",
+            price: "",
+            receiptNumber: "",
             warrantyExpiration: "",
             image: null,
             reminderDaysBefore: "",
@@ -244,9 +252,6 @@ fetchReceipts();
     }
 };
 
-
-
-  
   // עריכת קבלה
   const editReceipt = (receipt) => {
     setIsEditing(true);
@@ -258,6 +263,8 @@ fetchReceipts();
       storeName: receipt.store_name,
       purchaseDate: new Date(receipt.purchase_date).toISOString().split("T")[0],
       productName: receipt.product_name,
+      price: receipt.price,
+      receiptNumber: receipt.receipt_number,
       warrantyExpiration: new Date(receipt.warranty_expiration).toISOString().split("T")[0],
       image: receipt.image,
       reminderDaysBefore: receipt.reminder_days_before || "",

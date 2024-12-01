@@ -86,8 +86,10 @@ return (
           <tr>
             <th>חנות</th>
             <th>מוצר</th>
+            <th>עלות מוצר</th>
             <th>תאריך רכישה</th>
             <th>תוקף אחריות</th>
+            <th>מספר קבלה</th>
             <th>קובץ קבלה</th>
             <th>תזכורת</th>
             <th>פעולות</th>
@@ -103,8 +105,25 @@ return (
       <tr key={receipt.receipt_id || `receipt-${index}`}>
         <td>{receipt.store_name}</td>
         <td>{receipt.product_name}</td>
-        <td>{new Date(receipt.purchase_date).toLocaleDateString()}</td>
-        <td>{new Date(receipt.warranty_expiration).toLocaleDateString()}</td>
+        <td>
+  {receipt.price 
+    ? `${receipt.price} ₪` 
+    : "לא הוזן"}
+</td>
+        
+<td>
+  {receipt.purchase_date 
+    ? new Date(receipt.purchase_date).toLocaleDateString() 
+    : "לא הוזן"}
+</td>
+<td>
+  {receipt.warranty_expiration 
+    ? new Date(receipt.warranty_expiration).toLocaleDateString() 
+    : "לא הוזן"}
+</td>
+
+        <td>{receipt.receipt_number? `${receipt.receipt_number} `: "לא הוזן"}</td> 
+    
         <td>
         {receipt.image_path ? (
   <a href={`${receipt.image_path}?alt=media`} target="_blank" rel="noopener noreferrer">

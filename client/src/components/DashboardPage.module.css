@@ -56,7 +56,7 @@
     right: 20px; /* מרחק מצד ימין */
     width: 50px; /* רוחב הכפתור */
     height: 50px; /* גובה הכפתור */
-    background-color: #6b8e23; /* צבע רקע ירוק זית */
+    background-color: orange; /* צבע רקע ירוק  */
     color: white; /* צבע טקסט */
     border: none; /* ללא גבול */
     border-radius: 50%; /* עיגול */
@@ -71,5 +71,5 @@
 }
 
 .addReceiptButton:hover {
-    background-color: #556b2f; /* גוון כהה יותר של ירוק */
+    background-color: #ffc107
 }

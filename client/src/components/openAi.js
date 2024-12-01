@@ -15,8 +15,10 @@ async function scanImage(url) {
           {
             "storeName": "שם החנות",
             "productName": "שם המוצר",
+            "price": "מחיר ₪",
             "purchaseDate": "תאריך הרכישה",
             "warrantyEndDate": "תאריך סיום האחריות"
+            "receiptNumber": "מספר הקבלה",
           }`,
       },
       {

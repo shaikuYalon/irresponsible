@@ -6,18 +6,19 @@ body {
 /* עיצוב כללי לטופס */
 .formContainer {
   max-width: 600px;
-  margin: 0 auto;
+  margin-bottom: 30px; /* רווח של 30 פיקסלים מתחת לטופס */
   padding: 20px;
   background: white;
-  border: 2px solid;
-  border-image: linear-gradient(to right, #4285F4, #EA4335, #FBBC05, #34A853) 1;
+  /* border: 2px solid; */
+  /* border-image: linear-gradient(to right, #4285F4, #EA4335, #FBBC05, #34A853) 1; */
+  
   border-radius: 15px;
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0px 8px 16px rgba(10, 136, 194, 0.5);
 }
 
 /* מסגרת לשדה העלאת הקובץ */
 .formContainer input[type="file"] {
-  border: 2px solid #ff6b6b; /* אדום-כתום */
+  border: 2px solid #28a745; /* ירוק*/
 }
 
 /* עיצוב של כל התוויות והשדות */
@@ -55,17 +56,26 @@ body {
   border: 2px solid #dc3545; /* אדום */
 }
 
-.formContainer select[name="categoryId"] {
+.formContainer input[name="price"] {
   border: 2px solid #ffc107; /* צהוב */
 }
 
-.formContainer input[name="purchaseDate"] {
+.formContainer select[name="categoryId"] {
   border: 2px solid #28a745; /* ירוק */
 }
 
-.formContainer input[name="warrantyExpiration"] {
+.formContainer input[name="purchaseDate"] {
   border: 2px solid #007bff; /* כחול */
 }
+
+.formContainer input[name="warrantyExpiration"] {
+  border: 2px solid #dc3545; /* אדום */
+}
+
+input[name="receiptNumber"] {
+  border: 2px solid #ffc107; /* גבול בצבע צהוב */
+}
+
 
 /* עיצוב כפתורים מותאם אישית */
 .buttonGroup {
@@ -151,7 +161,7 @@ body {
   gap: 10px;
   padding: 10px 15px;
   border-radius: 10px;
-  border: 2px solid #28a745;
+  border: 2px solid #007bff;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 15px;
 }
@@ -168,7 +178,7 @@ body {
 .reminderSection select {
   padding: 8px;
   border-radius: 8px;
-  border: 2px solid #ffc107;
+  border: 2px solid #dc3545;
   background-color: #ffffff;
   color: #007bff;
   font-size: 14px;
@@ -181,3 +191,51 @@ body {
   object-fit: contain; /* מוודא שהמידות נשמרות בתוך המסגרת */
   border-radius: 8px; /* אופציונלי - עיגול פינות */
 }
+
+.saveButton {
+  background-color: #4caf50; /* צבע ירוק */
+  color: white; /* טקסט לבן */
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.saveButton:hover {
+  background-color: #45a049; /* צבע ירוק כהה יותר במעבר עכבר */
+}
+
+.cameraButton {
+  background-color: #4285F4; /* צבע כחול */
+  color: white; /* טקסט לבן */
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cameraButton:hover {
+  background-color: #1e88e5; /* צבע כחול כהה יותר במעבר עכבר */
+}
+
+.required {
+  color: red;
+}
+
+.errorInput {
+  border: 1px solid red;
+}
+
+.errorText {
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+
+
+
