@@ -10,7 +10,24 @@ function HomePage() {
     };
 
     const goToLogin = () => {
-        navigate('/login');
+        let user = null;
+
+        try {
+            user = JSON.parse(localStorage.getItem('user')); // שליפת פרטי המשתמש מה-localStorage
+        } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+        }
+
+        if (user && user.role) {
+            // בדיקה של ה-role והפניה בהתאם
+            if (user.role === 'admin') {
+                navigate('/admin-dashboard'); // דף מנהל
+            } else {
+                navigate('/dashboard'); // דף רגיל למשתמש
+            }
+        } else {
+            navigate('/login'); // דף התחברות אם אין משתמש
+        }
     };
 
     return (

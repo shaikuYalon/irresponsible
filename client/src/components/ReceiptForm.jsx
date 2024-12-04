@@ -195,13 +195,13 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
     const newErrors = {};
 
     // בדיקת שדות חובה
-    if (!receipt.storeName.trim()) {
-      newErrors.storeName = "שם החנות הוא שדה חובה";
-    }
+    // if (!receipt.storeName.trim()) {
+    //   newErrors.storeName = "שם החנות הוא שדה חובה";
+    // }
 
-    if (!receipt.productName.trim()) {
-      newErrors.productName = "שם המוצר הוא שדה חובה";
-    }
+    // if (!receipt.productName.trim()) {
+    //   newErrors.productName = "שם המוצר הוא שדה חובה";
+    // }
 
     // אם יש שגיאות, הצגתן והפסקת השליחה
     if (Object.keys(newErrors).length > 0) {
@@ -254,14 +254,16 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
 
         const parsedScannedData = JSON.parse(scannedData); // נתונים לאחר פריסה
         console.log("Parsed Scanned Data:", parsedScannedData);
-
+        
         // יצירת עותק מעודכן של ה-state עם הנתונים החדשים
         const updatedReceipt = {
           ...prevReceipt, // שמירה על הערכים הקיימים
           storeName: parsedScannedData.storeName || "", // עדכון רק אם יש ערך
           productName: parsedScannedData.productName || "",
-          price: parsedScannedData.price || "",
-          receiptNumber: parsedScannedData.receiptNumber || "",
+          price: parsedScannedData.price
+          ? parsedScannedData.price.replace(/[^\d.]/g, "")
+          : "",
+                  receiptNumber: parsedScannedData.receiptNumber || "",
           purchaseDate: parsedScannedData.purchaseDate
             ? formatDate(parsedScannedData.purchaseDate)
             : prevReceipt.purchaseDate,

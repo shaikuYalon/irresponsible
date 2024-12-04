@@ -47,14 +47,23 @@ function ReceiptsPage() {
   };
 
   // שליפת קבלות שנמחקו
-  const fetchTrashReceipts = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/api/trash");
-      setTrashReceipts(response.data);
-    } catch (error) {
-      console.error("שגיאה בשליפת קבלות שנמחקו:", error);
+const fetchTrashReceipts = async () => {
+  try {
+    const userId = localStorage.getItem("userId"); // קבלת userId מה-localStorage
+    if (!userId) {
+      throw new Error("User ID is missing");
     }
-  };
+
+    const response = await axios.get("http://localhost:5000/api/trash", {
+      params: { userId }, // העברת userId ב-query
+    });
+
+    setTrashReceipts(response.data);
+  } catch (error) {
+    console.error("שגיאה בשליפת קבלות שנמחקו:", error);
+  }
+};
+
 
   // שליפת קטגוריות
   const fetchCategories = async () => {
@@ -153,15 +162,8 @@ function ReceiptsPage() {
 
 
   const addOrUpdateReceipt = async (updatedReceipt) => {
-    if (isAddingReminder) {
-        const reminderDaysBefore = updatedReceipt.reminderDaysBefore || null;
-        await addReminder(editReceiptId, reminderDaysBefore); // העברת הערך ישירות
-        setShowAddForm(false);
-        setShowReceipts(true); // הצגת כל הקבלות לאחר שמירה
-        return;
-    }
-
     const formData = new FormData();
+
     formData.append("userId", updatedReceipt.userId || "");
     formData.append("categoryId", updatedReceipt.categoryId || "");
     formData.append("storeName", updatedReceipt.storeName || "");
@@ -179,7 +181,8 @@ function ReceiptsPage() {
     try {
         if (isEditing && editReceiptId) {
             // עדכון קבלה קיימת
-const response = await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {                headers: { "Content-Type": "multipart/form-data" },
+            const response = await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
             });
 
             setReceipts(
@@ -189,7 +192,8 @@ const response = await axios.put(`http://localhost:5000/api/receipts/${editRecei
                         : receipt
                 )
             );
-            console.log("הקבלה עודכנה בהצלחה");
+
+            console.log("Receipt updated successfully:", response.data);
         } else {
             // הוספת קבלה חדשה
             const response = await axios.post("http://localhost:5000/api/receipts", formData, {
@@ -197,9 +201,10 @@ const response = await axios.put(`http://localhost:5000/api/receipts/${editRecei
             });
 
             setReceipts([...receipts, response.data]);
-            console.log("הקבלה נוספה בהצלחה");
+            console.log("Receipt added successfully:", response.data);
         }
 
+        // איפוס השדות
         setNewReceipt({
             userId: JSON.parse(localStorage.getItem("userId")),
             categoryId: "",
@@ -218,11 +223,13 @@ const response = await axios.put(`http://localhost:5000/api/receipts/${editRecei
         setIsEditing(false);
         setEditReceiptId(null);
     } catch (error) {
-        console.error("שגיאה בהוספה או עדכון הקבלה:", error);
+        console.error("Error adding/updating receipt:", error.response?.data || error.message);
     }
+
     // רענון הרשימה מהשרת
-fetchReceipts(); 
+    fetchReceipts();
 };
+
 
 
   // הוספת תזכורת לקבלה

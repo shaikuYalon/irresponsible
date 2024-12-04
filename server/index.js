@@ -36,7 +36,6 @@ const uploadImageToFirebase = async (file) => {
     return await getDownloadURL(snapshot.ref);
   };
   
-
 // מסלול להעלאת תמונה בלבד לפיירבייס
 app.post('/api/upload-image', upload.single('image'), async (req, res) => {
     try {
@@ -195,6 +194,7 @@ app.post('/api/reminders', (req, res) => {
 
 // הוספת קבלה חדשה   
 app.post('/api/receipts', upload.single('image'), async (req, res) => {
+    
     const { userId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, price, receiptNumber } = req.body;
     const categoryId = parseInt(req.body.categoryId, 10) || null;
 
@@ -274,7 +274,7 @@ if (!storeName || !productName) {
 app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
     const { id } = req.params;
     const { userId, categoryId, storeName, purchaseDate, productName, warrantyExpiration, reminderDaysBefore, price, receiptNumber } = req.body;
-    console.log(userId, categoryId, storeName, purchaseDate, productName, price, receiptNumber, warrantyExpiration, reminderDaysBefore, id);
+
     try {
         let newImagePath = null;
 
@@ -313,13 +313,13 @@ app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
             storeName,
             purchaseDate || null,
             productName,
+            price || null,
+            receiptNumber || null,
             warrantyExpiration || null,
             newImagePath || null,
-            price || null,
-            receiptNumber || null
+            reminderDaysBefore || null,
+            id
         ];
-        
-          
 
         connection.query(sql, params, (err) => {
             if (err) {
@@ -328,7 +328,7 @@ app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
             }
 
             // אם התזכורת מעודכנת, לעדכן גם בטבלת Reminders
-            if (reminderDaysBefore && reminderDaysBefore.trim() !== '') {
+            if (reminderDaysBefore) {
                 const daysBefore = parseInt(reminderDaysBefore, 10);
                 const reminderDate = new Date(new Date(warrantyExpiration).getTime() - daysBefore * 24 * 60 * 60 * 1000);
 
@@ -357,7 +357,6 @@ app.put('/api/receipts/:id', upload.single('image'), async (req, res) => {
         res.status(500).json({ error: "Failed to update receipt" });
     }
 });
-
 
 
 // מחיקת התזכורת מבלי למחוק את הקבלה
@@ -478,12 +477,22 @@ app.delete('/api/trash/:id', (req, res) => {
 
 // שליפת כל הקבלות שבזבל
 app.get('/api/trash', (req, res) => {
-    const sql = 'SELECT * FROM Receipts WHERE is_deleted = 1';
-    connection.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: 'Failed to fetch trash receipts' });
+    const userId = req.query.userId; // קבלת userId מהבקשה
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const sql = 'SELECT * FROM Receipts WHERE is_deleted = 1 AND user_id = ?';
+    connection.query(sql, [userId], (err, results) => {
+        if (err) {
+            console.error("Error fetching trash receipts:", err);
+            return res.status(500).json({ error: 'Failed to fetch trash receipts' });
+        }
         res.json(results);
     });
 });
+
 
 // קרון ג'וב למחיקת קבלות מהזבל לאחר 30 ימים
 cron.schedule('0 0 * * *', () => {
