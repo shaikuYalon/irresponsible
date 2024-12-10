@@ -5,11 +5,12 @@ import TextField from '@mui/material/TextField';
 import styles from './Profile.module.css';
 
 function Profile() {
-    const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false);
+    const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '' });
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState('');
     const userId = localStorage.getItem('userId'); // מזהה המשתמש
-    const username = localStorage.getItem('username'); // שם המשתמש
 
     // טעינת פרטי המשתמש מהשרת
     useEffect(() => {
@@ -41,8 +42,26 @@ function Profile() {
         }
     };
 
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
+    const handlePasswordChange = async () => {
+        if (newPassword !== confirmPassword) {
+            setMessage('הסיסמה החדשה והאישור אינם תואמים.');
+            return;
+        }
+
+        try {
+            await axios.post('http://localhost:5000/api/users/change-password', {
+                userId,
+                currentPassword,
+                newPassword,
+            });
+            setMessage('הסיסמה עודכנה בהצלחה!');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error) {
+            setMessage('שגיאה בעדכון הסיסמה.');
+            console.error(error);
+        }
     };
 
     return (
@@ -89,20 +108,43 @@ function Profile() {
                 onChange={handleChange}
                 required
             />
-            <div className={styles.passwordContainer}>
-                <TextField
-                    label="סיסמה (רק אם ברצונך לשנות)"
-                    variant="outlined"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={handleChange}
-                />
-                <span onClick={togglePasswordVisibility} className={`${styles.togglePassword} material-symbols-outlined`}>
-                    {showPassword ? 'visibility' : 'visibility_off'}
-                </span>
-            </div>
             <button type="submit" className={styles.submitButton}>עדכן פרופיל</button>
+
+            <h3>שינוי סיסמה</h3>
+            <TextField
+                label="סיסמה נוכחית"
+                variant="outlined"
+                name="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+            />
+            <TextField
+                label="סיסמה חדשה"
+                variant="outlined"
+                name="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+            />
+            <TextField
+                label="אישור סיסמה חדשה"
+                variant="outlined"
+                name="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+            />
+            <button
+                type="button"
+                className={styles.submitButton}
+                onClick={handlePasswordChange}
+            >
+                עדכן סיסמה
+            </button>
         </Box>
     );
 }

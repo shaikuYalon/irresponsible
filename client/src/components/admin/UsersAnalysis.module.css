@@ -1,0 +1,176 @@
+/* עיצוב בסיסי */
+body {
+    background-color: #e8faff; /* תכלת פסטל רך */
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', Arial, sans-serif;
+}
+
+/* מיכל ראשי */
+.container {
+    background-color: #ffffff; /* רקע לבן */
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); /* צל מודגש */
+    margin: 30px auto;
+    max-width: 1200px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.container:hover {
+    transform: scale(1.02); /* הגדלה קלה */
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18); /* צל חזק */
+}
+
+/* כותרות */
+.header {
+    font-size: 2.5rem;
+    color: #64c5b1; /* מנטה כהה */
+    text-align: center;
+    background-color: #fdf2f8; /* ורוד פסטל רך */
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* צל עדין */
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 25px;
+}
+
+/* כפתורים */
+.button {
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffffff; /* טקסט לבן */
+    background-color: #81e6d9; /* מנטה אחיד */
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.button:hover {
+    background-color: #64c5b1; /* כהה יותר בריחוף */
+    transform: translateY(-2px); /* הנמכה */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); /* צל מודגש */
+}
+
+/* קבוצה של כפתורים */
+.analysisButtons,
+.buttonContainer {
+    display: flex;
+    justify-content: center; /* מרכז הכפתורים אופקית */
+    gap: 20px; /* רווח בין הכפתורים */
+    margin-bottom: 25px; /* מרחק מתחת לקבוצה */
+}
+
+
+/* טבלה */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden; /* שומר על פינות מעוגלות */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.table thead {
+    background-color: #b3e5fc; /* תכלת פסטל */
+    color: #333; /* טקסט כהה */
+    font-weight: bold;
+}
+
+.table thead th {
+    padding: 15px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.table tbody tr {
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.table tbody tr:nth-child(even) {
+    background-color: #e1f7f3; /* מנטה פסטלי */
+}
+
+.table tbody tr:hover {
+    background-color: #ffe4e1; /* ורוד עדין */
+    transform: scale(1.01);
+    cursor: pointer;
+}
+
+.table tbody td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+/* הודעות */
+.errorMessage {
+    color: #f76c6c; /* אדום פסטלי */
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.noData {
+    text-align: center;
+    color: #999; /* אפור עדין */
+    margin-top: 20px;
+}
+
+/* רספונסיביות */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    .header {
+        font-size: 2rem;
+    }
+
+    .button {
+        font-size: 1rem;
+        padding: 12px 20px;
+    }
+
+    .table thead th,
+    .table tbody td {
+        font-size: 0.9rem;
+        padding: 10px;
+    }
+}
+
+/* שדה בחירת שנה */
+.input {
+    width: 100%;
+    max-width: 200px; /* מגביל את הרוחב למקסימום */
+    padding: 10px;
+    font-size: 1rem;
+    border: 2px solid #81e6d9; /* מסגרת בצבע מנטה */
+    border-radius: 8px;
+    background-color: #ffffff; /* לבן */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input:focus {
+    border-color: #64c5b1; /* מסגרת כהה יותר במצב פוקוס */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); /* צל מודגש */
+    outline: none; /* הסרת מסגרת ברירת המחדל */
+}
+
+.label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333; /* טקסט כהה */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px; /* רווח בין התווית לשדה */
+    margin-bottom: 25px;
+}

@@ -2,6 +2,25 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import styles from "./AdminDashboard.module.css";
 
+// פונקציה להמרת מספר חודש לשם החודש
+const getMonthName = (monthNumber) => {
+    const monthNames = [
+      "ינואר",
+      "פברואר",
+      "מרץ",
+      "אפריל",
+      "מאי",
+      "יוני",
+      "יולי",
+      "אוגוסט",
+      "ספטמבר",
+      "אוקטובר",
+      "נובמבר",
+      "דצמבר",
+    ];
+    return monthNames[monthNumber - 1]; // מספר חודש מ-1 עד 12
+  };
+
 function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
@@ -84,10 +103,21 @@ function AdminDashboard() {
 
   const handleUserDetailsToggle = async (user) => {
     if (selectedUser && selectedUser.user_id === user.user_id) {
+      // אם לוחצים שוב על אותו משתמש, נסגור את המידע שלו
       setSelectedUser(null);
       setPurchaseData(null);
       setIsPurchaseDataVisible(false);
+      setAnalysisData(null); // איפוס נתוני הניתוח
+      setCurrentAnalysis(null); // איפוס סוג הניתוח
     } else {
+      // סגור מידע קודם
+      setSelectedUser(null);
+      setPurchaseData(null);
+      setIsPurchaseDataVisible(false);
+      setAnalysisData(null); // איפוס נתוני הניתוח
+      setCurrentAnalysis(null); // איפוס סוג הניתוח
+  
+      // הצג מידע חדש
       setSelectedUser(user);
       try {
         const response = await axios.get(
@@ -102,6 +132,7 @@ function AdminDashboard() {
       }
     }
   };
+  
 
   const fetchAnalysisData = async (type) => {
     if (!selectedUser) {
@@ -189,7 +220,7 @@ function AdminDashboard() {
                 <td>{user.last_name}</td>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
-                <td>{new Date(user.created_at).toLocaleString()}</td>
+                <td>{new Date(user.created_at).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" })}</td>
                 <td>
                   <button
                     className={styles.button}
@@ -208,7 +239,7 @@ function AdminDashboard() {
 
       {selectedUser && isPurchaseDataVisible && purchaseData && (
         <div>
-          <h2>נתוני קניות עבור {selectedUser.first_name}</h2>
+          <h2>נתוני קניות עבור {selectedUser.first_name} {selectedUser.last_name}</h2>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -228,19 +259,26 @@ function AdminDashboard() {
               {purchaseData.map((purchase, index) => (
                 <tr key={index}>
                   <td>{purchase.store_name}</td>
-                  <td>{new Date(purchase.purchase_date).toLocaleDateString()}</td>
+<td>
+  {new Date(purchase.purchase_date)
+    .toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+</td>
                   <td>{purchase.product_name}</td>
                   <td>
-                    {purchase.warranty_expiration
-                      ? new Date(
-                          purchase.warranty_expiration
-                        ).toLocaleDateString()
-                      : "לא צוין"}
+                  <td className="date-cell">
+  {purchase.warranty_expiration
+    ? new Date(purchase.warranty_expiration).toLocaleDateString("he-IL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "לא צוין"}
+</td>
                   </td>
-                  <td>{purchase.price} ₪</td>
-                  <td>{purchase.receipt_number}</td>
-                  <td>{purchase.category_name}</td>
-                  <td>{new Date(purchase.created_at).toLocaleString()}</td>
+                  <td>{purchase.price ? purchase.price : "לא צויין"} ₪</td>
+                  <td>{purchase.receipt_number ? purchase.receipt_number : "לא צויין"}</td>
+                  <td>{purchase.category_name ? purchase.category_name : "לא צויין"}</td>
+                  <td>{new Date(purchase.created_date).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" })}</td>
                   <td>{purchase.is_deleted ? "נמחקה" : "פעילה"}</td>
                   <td>
                     {purchase.image_path ? (
@@ -292,31 +330,35 @@ function AdminDashboard() {
         </div>
       )}
 
-      {analysisData && analysisData.data && analysisData.data.length > 0 ? (
-        <div className={styles.analysisResults}>
-          <h3>תוצאות ניתוח:</h3>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                {Object.keys(analysisData.headers).map((key) => (
-                  <th key={key}>{analysisData.headers[key]}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {analysisData.data.map((row, index) => (
-                <tr key={index}>
-                  {Object.keys(analysisData.headers).map((key, i) => (
-                    <td key={i}>{row[key]}</td>
-                  ))}
-                </tr>
+{analysisData && analysisData.data ? (
+  analysisData.data.length > 0 ? (
+    <div className={styles.analysisResults}>
+      <h3>תוצאות ניתוח:</h3>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            {Object.keys(analysisData.headers).map((key) => (
+              <th key={key}>{analysisData.headers[key]}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {analysisData.data.map((row, index) => (
+            <tr key={index}>
+              {Object.keys(analysisData.headers).map((key, i) => (
+                <td key={i}>
+                  {key === "month" ? getMonthName(row[key]) : row[key]}
+                </td>
               ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p>לא נמצאו תוצאות ניתוח.</p>
-      )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <p className={styles.noDataMessage}>לא נמצאו תוצאות ניתוח.</p>
+  )
+) : null}
     </div>
   );
 }

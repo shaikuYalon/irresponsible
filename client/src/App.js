@@ -12,14 +12,15 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import AdminNavbar from "./components/admin/AdminNavbar";
 import PrivateRoute from "./components/PrivateRoute";
 import RemindersPage from "./components/RemindersPage";
+import Profile from "./components/ProfilePage";
 import styles from "./App.module.css";
+import UsersAnalysis from "./components/admin/UsersAnalysis";
 
 function App() {
   const [userRole, setUserRole] = useState(
     localStorage.getItem("role") || "user"
   );
 
-  // עדכון תפקיד מה-localStorage בעת טעינה ראשונית
   useEffect(() => {
     const role = localStorage.getItem("role") || "user";
     if (userRole !== role) {
@@ -28,19 +29,18 @@ function App() {
   }, []);
 
   const handleLogin = (role) => {
-    setUserRole(role); // עדכון state לפי התפקיד
+    setUserRole(role);
   };
 
   const handleLogout = () => {
-    localStorage.clear(); // מחיקת כל הנתונים
-    setUserRole("user"); // חזרה לערך ברירת המחדל
-    window.location.href = "/"; // ניווט לדף הבית
+    localStorage.clear();
+    setUserRole("user");
+    window.location.href = "/";
   };
 
   return (
     <div className={styles.pageContainer}>
       <Router>
-        {/* בחירת Navbar בהתאם ל-role */}
         {userRole === "admin" ? (
           <AdminNavbar onLogout={handleLogout} />
         ) : (
@@ -53,8 +53,17 @@ function App() {
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
             <Route path="/register" element={<Register />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/Users-analysis" element={<UsersAnalysis />} />
 
-            {/* דף ניהול המנהל */}
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
+
             <Route
               path="/admin-dashboard"
               element={
@@ -63,8 +72,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
-            {/* דף המשתמש הרגיל */}
             <Route
               path="/dashboard"
               element={
@@ -73,8 +80,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
-            {/* דף קבלה */}
             <Route
               path="/receipts"
               element={
@@ -83,8 +88,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
-            {/* דף התראות */}
             <Route
               path="/reminders"
               element={
@@ -96,7 +99,6 @@ function App() {
           </Routes>
         </div>
 
-        {/* Footer יופיע רק אם המשתמש אינו מנהל */}
         {userRole !== "admin" && <Footer />}
       </Router>
     </div>

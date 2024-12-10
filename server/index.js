@@ -78,6 +78,9 @@ app.post('/contact', async (req, res) => {
     }
 });
 
+// עריכת פרופיל משתמש
+
+
 // שליפת כל הקטגוריות מהדאטה בייס
 app.get('/api/categories', (req, res) => {
     const sql = 'SELECT * FROM Categories';

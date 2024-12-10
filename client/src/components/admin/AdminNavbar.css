@@ -1,43 +1,64 @@
+/* ניווט מנהל */
 .admin-navbar {
-    background-color: #333;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .admin-navbar-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: 20px;
-  }
-  
-  .admin-navbar-item {
-    margin: 0;
-  }
-  
-  .admin-navbar-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .admin-navbar-button:hover {
-    background-color: #0056b3;
-  }
-  
-  .logout-button {
-    background-color: #dc3545;
-  }
-  
-  .logout-button:hover {
-    background-color: #a71d2a;
-  }
-  
+  background-color: #e3f6f5; /* רקע ירוק מנטה עדין */
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 10px; /* פינות מעוגלות */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* צל עדין */
+}
+
+/* רשימת ניווט */
+.admin-navbar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 15px;
+}
+
+/* פריטי ניווט */
+.admin-navbar-item {
+  margin: 0;
+}
+
+/* כפתורי ניווט */
+.admin-navbar-button {
+  background: linear-gradient(90deg, #b4e9e2, #88d6c5); /* גרדיאנט מנטה ותכלת */
+  color: #2f4f4f; /* טקסט כהה בגוון ירוק */
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* צל קל */
+}
+
+.admin-navbar-button:hover {
+  background: linear-gradient(90deg, #88d6c5, #b4e9e2); /* הפיכת כיוון הגרדיאנט */
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* צל חזק יותר */
+}
+
+/* כפתור יציאה */
+.logout-button {
+  background: linear-gradient(90deg, #fac8c9, #f6a6a7); /* גרדיאנט ורוד עדין */
+  color: #ffffff; /* טקסט לבן */
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* צל קל */
+}
+
+.logout-button:hover {
+  background: linear-gradient(90deg, #f6a6a7, #fac8c9); /* הפיכת כיוון הגרדיאנט */
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* צל חזק יותר */
+}

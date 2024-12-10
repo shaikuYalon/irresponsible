@@ -1,6 +1,6 @@
 /* עיצוב בסיסי */
 body {
-    background-color: #f7faff; /* צבע פסטל כחול בהיר מאוד */
+    background-color: #e8faff; /* תכלת פסטל רך */
     margin: 0;
     padding: 0;
     font-family: 'Roboto', Arial, sans-serif;
@@ -9,64 +9,73 @@ body {
 /* מיכל ראשי */
 .container {
     background-color: #ffffff; /* רקע לבן למיכל */
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    margin: 20px auto;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); /* צל עוצמתי יותר */
+    margin: 30px auto;
     max-width: 1200px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .container:hover {
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02); /* הגדלה קלה */
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18); /* צל מודגש יותר */
 }
 
 /* כותרת */
 .header {
-    font-size: 2.5rem; /* גודל גדול לכותרת */
-    color: #4a4e69; /* צבע טקסט פסטלי כהה */
-    text-align: center; /* מיקום במרכז */
-    background-color: #f8f9fa; /* רקע בהיר */
-    padding: 15px 20px; /* ריווח פנימי */
-    border-radius: 10px; /* פינות מעוגלות */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* צל עדין */
-    text-transform: uppercase; /* אותיות גדולות */
-    letter-spacing: 1.5px; /* ריווח בין אותיות */
-    margin-bottom: 30px; /* מרחק מהתוכן שמתחת */
+    font-size: 2.8rem;
+    color: #64c5b1; /* צבע מנטה פסטל כהה */
+    text-align: center;
+    background-color: #fdf2f8; /* ורוד פסטל רך */
+    padding: 20px 25px;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    margin-bottom: 35px;
 }
-
 
 /* כפתורים */
 .analysisButtons,
 .buttonContainer {
     display: flex;
-    justify-content: center; /* מרכז את הכפתורים */
+    justify-content: center;
     flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 20px;
+    margin-bottom: 25px;
 }
 
 .button {
-    padding: 12px 24px;
-    font-size: 1rem;
+    padding: 14px 28px;
+    font-size: 1.1rem;
     font-weight: bold;
     color: white;
-    background: linear-gradient(90deg, #ffb6c1, #ffa07a); /* צבעי פסטל */
+    background-color: #81e6d9; /* צבע מנטה אחיד */
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin: 10px auto; /* מרכז את הכפתור אופקית */
+    display: block; /* מאפשר שימוש ב-margin auto */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+
 .button:hover {
-    background: linear-gradient(90deg, #ffa07a, #ffb6c1);
+    background-color: #64c5b1; /* צבע כהה יותר לריחוף */
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.button:active {
+    background-color: #5bb098;
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .button:disabled {
-    background: #d6d6d6;
+    background-color: #d6d6d6;
     cursor: not-allowed;
     box-shadow: none;
 }
@@ -74,115 +83,119 @@ body {
 /* טבלה */
 .table {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 25px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    overflow: hidden; /* עוזר לשמור על הפינות המעוגלות */
+    background-color: #ffffff;
     border: 1px solid #ddd;
 }
 
 .table thead {
-    background-color: #add8e6; /* כחול פסטלי */
+    background-color: #b3e5fc; /* תכלת פסטל */
     color: #333;
+    font-weight: bold;
 }
 
-.table th,
-.table td {
-    padding: 12px;
+.table thead th {
+    padding: 15px;
     text-align: center;
-    border: 1px solid #ddd;
-    font-size: 1rem;
+    font-size: 1.1rem;
+}
+
+.table tbody tr {
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .table tbody tr:nth-child(even) {
-    background-color: #f0f8ff;
+    background-color: #e1f7f3; /* מנטה פסטל רך */
 }
 
 .table tbody tr:hover {
-    background-color: #e6e6fa; /* סגול פסטלי בהיר */
+    background-color: #ffe4e1; /* ורוד פסטל רך */
+    transform: scale(1.01); /* הגדלה קלה */
     cursor: pointer;
 }
 
-/* הודעות שגיאה */
-.errorMessage {
-    color: #ff6b6b; /* אדום פסטלי */
-    font-size: 1.2rem;
+.table tbody td {
+    padding: 12px;
     text-align: center;
-    margin-bottom: 20px;
-    animation: fadeIn 0.5s ease;
+    font-size: 1rem;
+    border-bottom: 1px solid #ddd;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+/* .table tbody td:first-child {
+    border-left: 1px solid #dddddd9e;
+}
+
+.table tbody td:last-child {
+    border-right: 1px solid #ddd;
+} */
+
+/* הודעות שגיאה */
+.errorMessage {
+    color: #f76c6c; /* אדום פסטל */
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 25px;
+    animation: fadeIn 0.5s ease;
 }
 
 /* ניתוח תוצאות */
 .analysisResults {
-    margin-top: 30px;
-    padding: 20px;
-    border-radius: 12px;
-    background-color: #ffe4e1; /* ורוד פסטלי */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-top: 40px;
+    padding: 25px;
+    border-radius: 16px;
+    background-color: #f8edeb;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 .analysisResults h3 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    color: #333;
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+    color: #64c5b1;
     text-align: center;
 }
 
 /* רספונסיביות */
 @media (max-width: 768px) {
     .container {
-        padding: 15px;
+        padding: 20px;
     }
 
     .header {
-        font-size: 2rem;
+        font-size: 2.2rem;
     }
 
     .button {
-        font-size: 0.9rem;
-        padding: 10px 20px;
+        font-size: 1rem;
+        padding: 12px 20px;
     }
 
-    .table th,
-    .table td {
+    .table thead th,
+    .table tbody td {
         font-size: 0.9rem;
-        padding: 8px;
+        padding: 10px;
     }
 
     .analysisResults h3 {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
 }
 
 /* צבעי כותרות */
-.header {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-    text-align: center;
-    color: #6a1b9a; /* צבע פסטל סגול כהה */
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
 h2 {
-    font-size: 1.8rem;
-    margin-bottom: 15px;
-    color: #ff6f61; /* צבע פסטל אדום-כתום */
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #ff9aa2; /* ורוד פסטל עדין */
     text-align: center;
 }
 
 h3 {
     font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: #42a5f5; /* צבע פסטל כחול בהיר */
+    margin-bottom: 15px;
+    color: #a8d0f7; /* תכלת פסטל כהה */
     text-align: center;
 }

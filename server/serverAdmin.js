@@ -38,21 +38,22 @@ app.get('/api/admin/user-purchases', (req, res) => {
     }
 
     let query = `
-        SELECT 
-            r.store_name,
-            r.purchase_date,
-            r.product_name,
-            r.warranty_expiration,
-            r.price,
-            r.receipt_number,
-            c.category_name,  
-            r.created_at,
-            r.is_deleted,
-            r.image_path
-        FROM receipts r
-        LEFT JOIN categories c ON r.category_id = c.category_id
-        WHERE r.user_id = ?
-    `;
+    SELECT 
+        r.store_name,
+        r.purchase_date,
+        r.product_name,
+        r.warranty_expiration,
+        r.price,
+        r.receipt_number,
+        c.category_name,  
+        DATE_FORMAT(r.created_at, '%Y-%m-%d') AS created_date, -- תאריך בפורמט מותאם אישית
+        r.is_deleted,
+        r.image_path
+    FROM receipts r
+    LEFT JOIN categories c ON r.category_id = c.category_id
+    WHERE r.user_id = ?
+`;
+
     const params = [user_id];
 
     if (year) {
@@ -194,6 +195,126 @@ app.get('/api/admin/purchase-analysis/topStores', (req, res) => {
         res.json({ success: true, topStores: results });
     });
 });
+
+// מסלול: ניתוח לפי חודשים לכל המשתמשים
+app.get("/api/admin/users-analysis/monthly", (req, res) => {
+  const { year } = req.query;
+  let whereClause = "";
+  const params = [];
+
+  if (year) {
+    whereClause = "WHERE YEAR(r.purchase_date) = ?";
+    params.push(year);
+  }
+
+  const query = `
+        SELECT 
+            MONTH(r.purchase_date) AS month,
+            COUNT(r.receipt_id) AS total_sales,
+            SUM(r.price) AS total_revenue
+        FROM receipts r
+        ${whereClause}
+        GROUP BY MONTH(r.purchase_date)
+        ORDER BY month;
+    `;
+
+  connection.query(query, params, (err, results) => {
+    if (err) {
+      return handleError(res, "Failed to fetch monthly analysis", err);
+    }
+    res.json({ success: true, monthly: results });
+  });
+});
+
+app.get("/api/admin/users-analysis/yearly", (req, res) => {
+  const query = `
+        SELECT 
+            YEAR(r.purchase_date) AS year,
+            COUNT(r.receipt_id) AS total_sales,
+            SUM(r.price) AS total_revenue
+        FROM receipts r
+        GROUP BY YEAR(r.purchase_date)
+        ORDER BY year;
+    `;
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      return handleError(res, "Failed to fetch yearly analysis", err);
+    }
+    res.json({ success: true, yearly: results });
+  });
+});
+
+app.get("/api/admin/users-analysis/category", (req, res) => {
+  const { year } = req.query;
+  let whereClause = "";
+  const params = [];
+
+  if (year) {
+    whereClause = "WHERE YEAR(r.purchase_date) = ?";
+    params.push(year);
+  }
+
+  const query = `
+        SELECT 
+            c.category_name,
+            COUNT(r.receipt_id) AS total_sales,
+            SUM(r.price) AS total_revenue
+        FROM receipts r
+        LEFT JOIN categories c ON r.category_id = c.category_id
+        ${whereClause}
+        GROUP BY c.category_id
+        ORDER BY total_revenue DESC;
+    `;
+
+  connection.query(query, params, (err, results) => {
+    if (err) {
+      return handleError(res, "Failed to fetch category analysis", err);
+    }
+    res.json({ success: true, category: results });
+  });
+});
+
+app.get("/api/admin/users-analysis/topStores", (req, res) => {
+  const { period, year } = req.query;
+
+  let groupBy = "MONTH(r.purchase_date)";
+  let selectPeriod = "MONTH(r.purchase_date) AS period";
+  const params = [];
+
+  if (period === "yearly") {
+    groupBy = "YEAR(r.purchase_date)";
+    selectPeriod = "YEAR(r.purchase_date) AS period";
+  }
+
+  let whereClause = "";
+  if (year) {
+    whereClause = "WHERE YEAR(r.purchase_date) = ?";
+    params.push(year);
+  }
+
+  const query = `
+        SELECT 
+            r.store_name,
+            ${selectPeriod},
+            COUNT(r.receipt_id) AS total_sales,
+            SUM(r.price) AS total_revenue
+        FROM receipts r
+        ${whereClause}
+        GROUP BY r.store_name, ${groupBy}
+        ORDER BY total_revenue DESC
+        LIMIT 5;
+    `;
+
+  connection.query(query, params, (err, results) => {
+    if (err) {
+      return handleError(res, "Failed to fetch top stores analysis", err);
+    }
+    res.json({ success: true, topStores: results });
+  });
+});
+
+  
 
 // הפעלת השרת
 app.listen(5001, () => {

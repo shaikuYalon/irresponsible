@@ -10,14 +10,14 @@ const AdminNavbar = ({ onLogout }) => {
   };
 
   return (
-    <nav className="admin-navbar">
+    <nav className="admin-navbar" role="navigation" aria-label="תפריט מנהל">
       <ul className="admin-navbar-list">
         {/* כפתור לניהול ראשי */}
         <li className="admin-navbar-item">
           <button
             className="admin-navbar-button"
             onClick={() => handleNavigation("/admin-dashboard")}
-            aria-label="ניהול ראשי"
+            aria-label="מעבר לניהול ראשי"
           >
             ניהול ראשי
           </button>
@@ -28,11 +28,20 @@ const AdminNavbar = ({ onLogout }) => {
           <button
             className="admin-navbar-button logout-button"
             onClick={onLogout}
-            aria-label="התנתק"
+            aria-label="התנתקות מהמערכת"
           >
             התנתק
           </button>
         </li>
+        <li className="admin-navbar-item">
+  <button
+    className="admin-navbar-button"
+    onClick={() => handleNavigation("/users-analysis")}
+  >
+    ניתוח משתמשים כללי
+  </button>
+</li>
+
       </ul>
     </nav>
   );
