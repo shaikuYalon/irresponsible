@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom"; // שימוש ב-useLocation
-import axios from "axios";
 import ReceiptsTable from "./utils/ReceiptsTable";
 import RemindersList from "./utils/RemindersList";
 import ReceiptForm from "./ReceiptForm";
 import styles from "./ReceiptsPage.module.css";
-
+import apiClient from "./ApiClient";
 
 function ReceiptsPage() {
   // הגדרת מצבים שונים לשמירת הנתונים ולהצגת התצוגות
+  const [setError] = useState(""); // סטייט להודעות שגיאה
   const location = useLocation(); // קבלת המידע שהועבר
   const [receipts, setReceipts] = useState([]); // רשימת הקבלות
   const [categories, setCategories] = useState([]); // רשימת הקטגוריות
   const [trashReceipts, setTrashReceipts] = useState([]); // קבלות שנמחקו
   const [newReceipt, setNewReceipt] = useState({
+    
     userId: JSON.parse(localStorage.getItem("userId")),
     categoryId: "",
     storeName: "",
@@ -32,32 +33,27 @@ function ReceiptsPage() {
   const [isEditing, setIsEditing] = useState(false); // מצב עריכת קבלה
   const [isAddingReminder, setIsAddingReminder] = useState(false); // מצב הוספת תזכורת
   const [editReceiptId, setEditReceiptId] = useState(null); // מזהה קבלה לעריכה
+  const [showReminderModal, setShowReminderModal] = useState(false); // שליטה במודאל
+const [selectedReceipt, setSelectedReceipt] = useState(null); // שמירת הקבלה שנבחרה
+
 
   const today = new Date().toISOString().split("T")[0]; // משתנה לשמירת תאריך היום בפורמט ISO
 
   // שליפת הקבלות מהשרת
   const fetchReceipts = async () => {
     try {
-      const userId = JSON.parse(localStorage.getItem("userId"));
-      const response = await axios.get(`http://localhost:5000/api/receipts?userId=${userId}`);
-      setReceipts(response.data);
+        const response = await apiClient.get("/receipts"); // אין צורך להוסיף userId ל-query
+        setReceipts(response.data);
     } catch (error) {
-      console.error("שגיאה בשליפת קבלות:", error);
+        console.error("שגיאה בשליפת קבלות:", error.response?.data || error.message);
     }
-  };
+};
 
-  // שליפת קבלות שנמחקו
+
+// שליפת קבלות שנמחקו
 const fetchTrashReceipts = async () => {
   try {
-    const userId = localStorage.getItem("userId"); // קבלת userId מה-localStorage
-    if (!userId) {
-      throw new Error("User ID is missing");
-    }
-
-    const response = await axios.get("http://localhost:5000/api/trash", {
-      params: { userId }, // העברת userId ב-query
-    });
-
+    const response = await apiClient.get("/trash?"); // אין צורך להעביר userId, נשלף מתוך הטוקן בשרת
     setTrashReceipts(response.data);
   } catch (error) {
     console.error("שגיאה בשליפת קבלות שנמחקו:", error);
@@ -65,15 +61,16 @@ const fetchTrashReceipts = async () => {
 };
 
 
-  // שליפת קטגוריות
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/api/categories");
+
+const fetchCategories = async () => {
+  try {
+      const response = await apiClient.get("/categories"); // שימוש ב-apiClient
       setCategories(response.data);
-    } catch (error) {
-      console.error("שגיאה בשליפת קטגוריות:", error);
-    }
-  };
+  } catch (error) {
+      console.error("שגיאה בשליפת קטגוריות:", error.response?.data || error.message);
+  }
+};
+
 
   useEffect(() => {
     fetchCategories();
@@ -84,9 +81,6 @@ const fetchTrashReceipts = async () => {
       setShowAddForm(true); // פותח את הטופס אוטומטית אם הפרמטר הועבר
     }
   }, [location.state]); // תלוי ב-location.state
-  
-  
-
   
 
   // הצגת רשימת קבלות והסתרת תצוגות אחרות
@@ -162,26 +156,47 @@ const fetchTrashReceipts = async () => {
 
 
   const addOrUpdateReceipt = async (updatedReceipt) => {
-    const formData = new FormData();
-
-    formData.append("userId", updatedReceipt.userId || "");
-    formData.append("categoryId", updatedReceipt.categoryId || "");
-    formData.append("storeName", updatedReceipt.storeName || "");
-    formData.append("purchaseDate", updatedReceipt.purchaseDate || "");
-    formData.append("productName", updatedReceipt.productName || "");
-    formData.append("price", updatedReceipt.price || "");
-    formData.append("receiptNumber", updatedReceipt.receiptNumber || "");
-    formData.append("warrantyExpiration", updatedReceipt.warrantyExpiration || "");
-    formData.append("reminderDaysBefore", updatedReceipt.reminderDaysBefore || "");
-
-    if (updatedReceipt.image) {
-        formData.append("image", updatedReceipt.image);
-    }
-
     try {
+        // בדיקה אם מדובר בתזכורת בלבד
+        if (updatedReceipt.receiptId && updatedReceipt.reminderDaysBefore) {
+            // שליחת בקשה להוספת תזכורת בלבד
+            const response = await apiClient.post("/api/reminders", {
+                receiptId: updatedReceipt.receiptId,
+                reminderDaysBefore: updatedReceipt.reminderDaysBefore,
+            });
+
+            console.log("Reminder added successfully:", response.data);
+            setReceipts(
+                receipts.map((receipt) =>
+                    receipt.receipt_id === updatedReceipt.receiptId
+                        ? { ...receipt, reminder_days_before: updatedReceipt.reminderDaysBefore }
+                        : receipt
+                )
+            );
+            return; // סיום הבקשה לתזכורת בלבד
+        }
+
+        // הכנת ה-FormData לקבלה חדשה או עדכון קבלה קיימת
+        const formData = new FormData();
+
+        formData.append("userId", updatedReceipt.userId || "");
+        formData.append("categoryId", updatedReceipt.categoryId || "");
+        formData.append("storeName", updatedReceipt.storeName || "");
+        formData.append("purchaseDate", updatedReceipt.purchaseDate || "");
+        formData.append("productName", updatedReceipt.productName || "");
+        formData.append("price", updatedReceipt.price || "");
+        formData.append("receiptNumber", updatedReceipt.receiptNumber || "");
+        formData.append("warrantyExpiration", updatedReceipt.warrantyExpiration || "");
+        formData.append("reminderDaysBefore", updatedReceipt.reminderDaysBefore || "");
+
+        if (updatedReceipt.image) {
+            formData.append("image", updatedReceipt.image);
+        }
+
+        let response;
         if (isEditing && editReceiptId) {
             // עדכון קבלה קיימת
-            const response = await axios.put(`http://localhost:5000/api/receipts/${editReceiptId}`, formData, {
+            response = await apiClient.put(`/receipts/${editReceiptId}`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
@@ -196,7 +211,7 @@ const fetchTrashReceipts = async () => {
             console.log("Receipt updated successfully:", response.data);
         } else {
             // הוספת קבלה חדשה
-            const response = await axios.post("http://localhost:5000/api/receipts", formData, {
+            response = await apiClient.post("/receipts", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
@@ -225,38 +240,76 @@ const fetchTrashReceipts = async () => {
     } catch (error) {
         console.error("Error adding/updating receipt:", error.response?.data || error.message);
     }
-
     // רענון הרשימה מהשרת
     fetchReceipts();
 };
 
+const handleAddReminder = (receipt) => {
+  setSelectedReceipt(receipt); // שמירת הקבלה שנבחרה
+  setShowReminderModal(true); // הצגת המודאל
+};
+
+{showReminderModal && (
+  <div className={styles.modalOverlay}>
+    <div className={styles.modalContent}>
+      <h3>הוספת תזכורת</h3>
+      <p>בחר מספר ימים לפני תום האחריות לקבלת תזכורת:</p>
+      <select
+        onChange={(e) => setSelectedReceipt({ 
+          ...selectedReceipt, 
+          reminder_days_before: e.target.value 
+        })}
+        value={selectedReceipt?.reminder_days_before || ""}
+      >
+        <option value="">בחר</option>
+        <option value="2">יומיים לפני</option>
+        <option value="7">שבוע לפני</option>
+        <option value="14">שבועיים לפני</option>
+      </select>
+      <div className={styles.modalActions}>
+        <button
+          onClick={() => {
+            addReminder(selectedReceipt);
+            setShowReminderModal(false);
+          }}
+          className={styles.saveButton}
+        >
+          שמור
+        </button>
+        <button
+          onClick={() => setShowReminderModal(false)}
+          className={styles.cancelButton}
+        >
+          ביטול
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
-  // הוספת תזכורת לקבלה
-  const addReminder = async (receiptId, reminderDaysBefore) => {
-    try {
-        if (!reminderDaysBefore) {
-            console.error("תזכורת לא יכולה להיות ריקה.");
-            return;
-        }
+//הוספת תזכורת לקבלה קיימת
+const addReminder = async (receipt, reminderDaysBefore) => {
+  try {
+    // קריאה ל-API להוספת תזכורת
+    const response = await apiClient.post(`/receipts/${receipt.receipt_id}/reminder`, {
+      reminderDaysBefore: parseInt(reminderDaysBefore, 10),
+    });
 
-        console.log("נתונים שנשלחים לשרת:", {
-            userId: JSON.parse(localStorage.getItem("userId")),
-            receiptId,
-            reminderDaysBefore,
-        });
+    console.log("Reminder added successfully:", response.data);
 
-        await axios.post("http://localhost:5000/api/reminders", {
-            userId: JSON.parse(localStorage.getItem("userId")),
-            receiptId,
-            reminderDaysBefore,
-        });
-
-        console.log("תזכורת נוספה או עודכנה בהצלחה");
-        fetchReceipts(); // רענון הרשימה של הקבלות
-    } catch (error) {
-        console.error("שגיאה בהוספת או עדכון תזכורת:", error);
-    }
+    // עדכון הסטייט המקומי
+    setReceipts((prevReceipts) =>
+      prevReceipts.map((r) =>
+        r.receipt_id === receipt.receipt_id
+          ? { ...r, reminder_days_before: reminderDaysBefore }
+          : r
+      )
+    );
+  } catch (error) {
+    console.error("Error adding reminder:", error.response?.data || error.message);
+    setError("שגיאה בהוספת תזכורת. נסה שוב."); // סטייט להודעת שגיאה ידידותית
+  }
 };
 
   // עריכת קבלה
@@ -283,61 +336,97 @@ const fetchTrashReceipts = async () => {
   // מחיקת תזכורת
   const deleteReminder = async (receiptId) => {
     try {
-      await axios.put(`http://localhost:5000/api/receipts/${receiptId}/reminder`);
-      console.log("תזכורת נמחקה בהצלחה");
-      fetchReceipts(); // רענון הרשימה
+      const response = await apiClient.put(`/receipts/${receiptId}/reminder`);
+      console.log(response.data.message);
+      fetchReceipts(); // רענון הקבלות
     } catch (error) {
-      console.error("שגיאה במחיקת תזכורת:", error);
+      console.error("Error deleting reminder:", error.response?.data || error.message);
     }
   };
   
-  // עריכת תזכורת קיימת
-  const editReminder = (receipt) => {
-    setIsAddingReminder(true);
-    setEditReceiptId(receipt.receipt_id);
 
-    setNewReceipt({
-        reminderDaysBefore: receipt.reminder_days_before || "",
-    });
-
-    setShowAddForm(true);
-    setShowReceipts(false);
-};
-
+   //   עריכת תזכורת
+   const editReminder = async (updatedReceipt) => {
+    try {
+      // קריאה לשרת לעדכון תזכורת
+      const response = await apiClient.put(
+        `/receipts/${updatedReceipt.receipt_id}/reminder`,
+        {
+          reminder_days_before: updatedReceipt.reminder_days_before,
+        }
+      );
+  
+      console.log(response.data.message);
+  
+      // עדכון הקבלה ברשימה לאחר הצלחה
+      setReceipts((prevReceipts) =>
+        prevReceipts.map((receipt) =>
+          receipt.receipt_id === updatedReceipt.receipt_id
+            ? {
+                ...receipt,
+                reminder_days_before: updatedReceipt.reminder_days_before,
+                reminder_date: calculateReminderDate(
+                  receipt.warranty_expiration,
+                  updatedReceipt.reminder_days_before
+                ), // עדכון התאריך בטבלה המקומית
+              }
+            : receipt
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Error editing reminder:",
+        error.response?.data || error.message
+      );
+    }
+  };
+  
+  // פונקציה לחישוב תאריך התזכורת
+  const calculateReminderDate = (warrantyExpiration, daysBefore) => {
+    if (!warrantyExpiration) return null;
+    const expirationDate = new Date(warrantyExpiration);
+    expirationDate.setDate(expirationDate.getDate() - daysBefore);
+    return expirationDate.toISOString().split("T")[0]; // פורמט YYYY-MM-DD
+  };
+  
   
   // העברת קבלה לזבל
-  const moveToTrash = async (receiptId) => {
-    try {
-      await axios.put(`http://localhost:5000/api/receipts/${receiptId}/trash`);
+const moveToTrash = async (receiptId) => {
+  try {
+    await apiClient.put(`/receipts/${receiptId}/trash`);
+
       setReceipts(receipts.filter((r) => r.receipt_id !== receiptId));
-      fetchTrashReceipts();
+      fetchTrashReceipts(); // רענון רשימת הקבלות שנמחקו
       console.log("הקבלה הועברה לזבל");
-    } catch (error) {
-      console.error("שגיאה בהעברת קבלה לזבל:", error);
-    }
-  };
+  } catch (error) {
+      console.error("שגיאה בהעברת קבלה לזבל:", error.response?.data || error.message);
+  }
+};
+
 
   // שחזור קבלה מהזבל
-  const restoreReceipt = async (receiptId) => {
-    try {
-      await axios.put(`http://localhost:5000/api/receipts/restore/${receiptId}`);
-      fetchTrashReceipts();
-      fetchReceipts();
+const restoreReceipt = async (receiptId) => {
+  try {
+    await apiClient.put(`/receipts/restore/${receiptId}`);
+    fetchTrashReceipts(); // רענון רשימת הקבלות בזבל
+      fetchReceipts(); // רענון רשימת הקבלות הפעילות
       console.log("הקבלה שוחזרה בהצלחה");
-    } catch (error) {
-      console.error("שגיאה בשחזור קבלה:", error);
-    }
-  };
+  } catch (error) {
+      console.error("שגיאה בשחזור קבלה:", error.response?.data || error.message);
+  }
+};
 
-  const permanentlyDeleteReceipt = async (receiptId) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/trash/${receiptId}`); // מחיקה לצמיתות של קבלה מהשרת
+
+const permanentlyDeleteReceipt = async (receiptId) => {
+  try {
+      await apiClient.delete(`/trash/${receiptId}`); // מחיקה לצמיתות של קבלה מהשרת
       fetchTrashReceipts(); // רענון רשימת הקבלות שנמחקו לאחר המחיקה
       console.log("Receipt permanently deleted");
-    } catch (error) {
-      console.error("Error permanently deleting receipt:", error);
-    }
-  };
+  } catch (error) {
+      console.error("Error permanently deleting receipt:", error.response?.data || error.message);
+  }
+};
+
   
   return (
     <div className={styles.container}>
@@ -364,16 +453,18 @@ const fetchTrashReceipts = async () => {
   </button>
 </div>
 
-      {/* הצגת רשימת הקבלות */}
-      {showReceipts && (
+   {/* הצגת רשימת הקבלות */}
+   {showReceipts && (
   <ReceiptsTable 
     receipts={receipts}
     categories={categories}
     editReceipt={editReceipt}
     moveToTrash={moveToTrash}
     editReminder={editReminder}
+    addReminder={addReminder}
+    handleAddReminder={handleAddReminder}
   />
-)}
+)} 
  
       {/* הצגת רשימת התזכורות */}
       {showReminders && (
@@ -436,4 +527,3 @@ const fetchTrashReceipts = async () => {
 }
 
 export default ReceiptsPage;
-  

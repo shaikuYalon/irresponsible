@@ -3,6 +3,7 @@ import axios from 'axios';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import styles from './Profile.module.css';
+import apiClient from './ApiClient';
 
 function Profile() {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '' });
@@ -13,19 +14,22 @@ function Profile() {
     const userId = localStorage.getItem('userId'); // מזהה המשתמש
 
     // טעינת פרטי המשתמש מהשרת
-    useEffect(() => {
-        const fetchProfileData = async () => {
-            try {
-                const response = await axios.get(`http://localhost:5000/api/users/${userId}`);
-                setFormData(response.data);
-            } catch (error) {
-                setMessage('שגיאה בטעינת פרטי הפרופיל');
-                console.error(error);
-            }
-        };
+useEffect(() => {
+    const fetchProfileData = async () => {
+        try {
+            const response = await apiClient.get(`/users/${userId}`); // שימוש ב-apiClient
+            setFormData(response.data);
+        } catch (error) {
+            setMessage('שגיאה בטעינת פרטי הפרופיל');
+            console.error(error);
+        }
+    };
 
+    if (userId) {
         fetchProfileData();
-    }, [userId]);
+    }
+}, [userId]);
+
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,22 +38,23 @@ function Profile() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`http://localhost:5000/api/users/${userId}`, formData);
+            await apiClient.put(`/users/${userId}`, formData); // שימוש ב-apiClient
             setMessage('פרטי הפרופיל עודכנו בהצלחה!');
         } catch (error) {
             setMessage('שגיאה בעדכון פרטי הפרופיל');
             console.error(error);
         }
     };
+    
 
     const handlePasswordChange = async () => {
         if (newPassword !== confirmPassword) {
             setMessage('הסיסמה החדשה והאישור אינם תואמים.');
             return;
         }
-
+    
         try {
-            await axios.post('http://localhost:5000/api/users/change-password', {
+            await apiClient.post('/users/change-password', {
                 userId,
                 currentPassword,
                 newPassword,
@@ -59,10 +64,12 @@ function Profile() {
             setNewPassword('');
             setConfirmPassword('');
         } catch (error) {
-            setMessage('שגיאה בעדכון הסיסמה.');
-            console.error(error);
+            const errorMsg = error.response?.data?.message || 'שגיאה בעדכון הסיסמה.';
+            setMessage(errorMsg);
+            console.error('Error changing password:', error);
         }
     };
+    
 
     return (
         <Box

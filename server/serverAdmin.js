@@ -1,6 +1,7 @@
 import express from "express";
 import connection from "./db/connection.js";
 import cors from "cors";
+import middlewareToken from "./middlewareToken.js";
 
 const app = express();
 
@@ -14,7 +15,9 @@ const handleError = (res, message, error = null, statusCode = 500) => {
 };
 
 // מסלול: שליפת משתמשים
-app.get("/api/admin/users", (req, res) => {
+app.get("/api/admin/users", middlewareToken.verifyToken,middlewareToken.verifyAdmin, (req, res) => {
+    
+    
     const sql = `
         SELECT user_id, first_name, last_name, username, email, created_at 
         FROM users

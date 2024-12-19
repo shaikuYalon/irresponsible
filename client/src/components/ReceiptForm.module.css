@@ -18,7 +18,8 @@ body {
 
 /* מסגרת לשדה העלאת הקובץ */
 .formContainer input[type="file"] {
-  border: 2px solid #28a745; /* ירוק*/
+  border: 2px solid #007bff; /* כחול */
+
 }
 
 /* עיצוב של כל התוויות והשדות */
@@ -48,32 +49,33 @@ body {
 }
 
 /* עיצוב מסגרות שדות קלט לפי הצבעים המבוקשים */
-.formContainer input[name="storeName"] {
-  border: 2px solid #007bff; /* כחול */
+.formContainer input[name="storeName"] { 
+  border: 2px solid #dc3545; /* אדום */
+
 }
 
 .formContainer input[name="productName"] {
-  border: 2px solid #dc3545; /* אדום */
-}
-
-.formContainer input[name="price"] {
   border: 2px solid #ffc107; /* צהוב */
 }
 
-.formContainer select[name="categoryId"] {
+.formContainer input[name="price"] {
   border: 2px solid #28a745; /* ירוק */
 }
 
-.formContainer input[name="purchaseDate"] {
+.formContainer select[name="categoryId"] {
   border: 2px solid #007bff; /* כחול */
 }
 
-.formContainer input[name="warrantyExpiration"] {
+.formContainer input[name="purchaseDate"] {
   border: 2px solid #dc3545; /* אדום */
 }
 
+.formContainer input[name="warrantyExpiration"] {
+  border: 2px solid #ffc107; /* צהוב */
+}
+
 input[name="receiptNumber"] {
-  border: 2px solid #ffc107; /* גבול בצבע צהוב */
+  border: 2px solid #28a745; /* ירוק*/
 }
 
 
@@ -236,6 +238,29 @@ input[name="receiptNumber"] {
   margin-top: 4px;
 }
 
+.spinnerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.8); /* רקע חצי שקוף */
+  z-index: 9999; /* מציב את זה מעל כל האלמנטים */
+}
 
+.spinnerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 
-
+.spinnerText {
+  font-size: 1.2rem;
+  color: #555; /* צבע הטקסט */
+  font-weight: bold;
+} 

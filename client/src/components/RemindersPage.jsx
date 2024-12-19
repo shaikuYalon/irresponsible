@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import styles from './RemindersPage.module.css';
+import apiClient from './ApiClient';
 
 function RemindersPage() {
     // מצב לשמירת רשימת התזכורות
@@ -18,42 +18,38 @@ function RemindersPage() {
     // שליפת תזכורות מהשרת
     const fetchReminders = async () => {
         try {
-            const userId = localStorage.getItem('userId');
-            if (!userId) {
-                console.error("User ID is missing");
-                return;
-            }
-            const response = await axios.get(`http://localhost:5000/api/reminders?userId=${userId}`);
+            const response = await apiClient.get('/reminders'); // שימוש ב-apiClient
             setReminders(response.data);
         } catch (error) {
             console.error("Error fetching reminders:", error);
         }
     };
     
+    
 
-    // הוספת תזכורת חדשה לשרת וריענון הרשימה
-    const addReminder = async () => {
-        try {
-            await axios.post('http://localhost:5000/api/reminders', {
-                ...newReminder,
-                userId: localStorage.getItem('userId'),
-            });
-            setNewReminder({ reminderType: '7days' }); // איפוס התזכורת החדשה לאחר הוספה
-            fetchReminders();
-        } catch (error) {
-            console.error("Error adding reminder:", error);
-        }
-    };
+   // הוספת תזכורת חדשה לשרת וריענון הרשימה
+const addReminder = async () => {
+    try {
+        await apiClient.post('/reminders', {
+            ...newReminder, // פרטי התזכורת
+        });
+        setNewReminder({ reminderType: '7days' }); // איפוס התזכורת החדשה לאחר הוספה
+        fetchReminders(); // ריענון רשימת התזכורות
+    } catch (error) {
+        console.error("Error adding reminder:", error);
+    }
+};
 
-    // מחיקת תזכורת לפי מזהה וריענון הרשימה
-    const deleteReminder = async (id) => {
-        try {
-            await axios.delete(`http://localhost:5000/api/reminders/${id}`);
-            fetchReminders();
-        } catch (error) {
-            console.error("Error deleting reminder:", error);
-        }
-    };
+   // מחיקת תזכורת לפי מזהה וריענון הרשימה
+const deleteReminder = async (id) => {
+    try {
+        await apiClient.delete(`/reminders/${id}`); // שימוש ב-apiClient למחיקת התזכורת
+        fetchReminders(); // ריענון רשימת התזכורות
+    } catch (error) {
+        console.error("Error deleting reminder:", error);
+    }
+};
+
 
     return (
         <div className={styles.remindersPage}>
@@ -86,3 +82,5 @@ function RemindersPage() {
 }
 
 export default RemindersPage;
+
+

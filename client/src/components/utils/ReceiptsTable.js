@@ -1,86 +1,35 @@
 import React, { useState } from "react";
 import styles from "./ReceiptsTable.module.css";
+import ReminderModal from "../ReminderModal"; // ייבוא הקומפוננטה החדשה
 
-function ReceiptsTable({ receipts, categories, editReceipt, moveToTrash, editReminder }) {
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [searchCategory, setSearchCategory] = useState("");
-  const [searchProductName, setSearchProductName] = useState("");
-  const [searchStoreName, setSearchStoreName] = useState("");
-  const [searchPurchaseDate, setSearchPurchaseDate] = useState("");
-  const [searchYear, setSearchYear] = useState("");
- 
-  const filteredReceipts = receipts.filter((receipt) => {
-    const matchCategory = searchCategory ? receipt.category_id.toString() === searchCategory : true;
-    const matchProductName = searchProductName ? receipt.product_name.includes(searchProductName) : true;
-    const matchStoreName = searchStoreName ? receipt.store_name.includes(searchStoreName) : true;
-    const matchPurchaseDate = searchPurchaseDate ? receipt.purchase_date.startsWith(searchPurchaseDate) : true;
-    const matchYear = searchYear ? new Date(receipt.purchase_date).getFullYear() === Number(searchYear) : true;
-    return matchCategory && matchProductName && matchStoreName && matchPurchaseDate && matchYear;
-});
-  
+function ReceiptsTable({
+  receipts,
+  categories,
+  editReceipt,
+  moveToTrash,
+  addReminder,
+}) {
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
 
-return (
-  <div className={styles.tableContainer}>
-    <button className={styles.filterButton} onClick={() => setIsFilterVisible(!isFilterVisible)}>
-      {isFilterVisible ? "סגור סינון" : "סינון לפי"}
-    </button>
+  const handleOpenReminderModal = (receipt) => {
+    setSelectedReceipt(receipt);
+    setIsReminderModalOpen(true);
+  };
 
-    {isFilterVisible && (
-      <div className={styles.searchContainer}>
-        <label>
-          חפש לפי קטגוריה:
-          <select value={searchCategory} onChange={(e) => setSearchCategory(e.target.value)}>
-            <option value="">כל הקטגוריות</option>
-            {categories.map((category) => (
-              <option key={category.category_id} value={category.category_id}>
-                {category.category_name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <input
-          type="text"
-          placeholder="חפש לפי שם המוצר"
-          value={searchProductName}
-          onChange={(e) => setSearchProductName(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="חפש לפי שם החנות"
-          value={searchStoreName}
-          onChange={(e) => setSearchStoreName(e.target.value)}
-        />
-        <label>
-          חפש לפי תאריך רכישה:
-          <input
-            type="date"
-            value={searchPurchaseDate}
-            onChange={(e) => setSearchPurchaseDate(e.target.value)}
-          />
-        </label>
-        <input
-          type="text"
-          placeholder="חפש לפי שנה"
-          value={searchYear}
-          onChange={(e) => setSearchYear(e.target.value)}
-        />
-        <button
-          className={styles.resetButton}
-          onClick={() => {
-            setSearchCategory("");
-            setSearchProductName("");
-            setSearchStoreName("");
-            setSearchPurchaseDate("");
-            setSearchYear("");
-          }}
-        >
-          איפוס סינון
-        </button>
-      </div>
-    )}
- 
+  const handleCloseReminderModal = () => {
+    setIsReminderModalOpen(false);
+    setSelectedReceipt(null);
+  };
 
+  const handleSaveReminder = async (reminderDays) => {
+    await addReminder(selectedReceipt, reminderDays);
+    handleCloseReminderModal();
+  };
 
+  return (
+    <div className={styles.tableContainer}>
+      {/* טבלת קבלות */}
       <table className={styles.receiptsTable}>
         <thead>
           <tr>
@@ -96,75 +45,86 @@ return (
           </tr>
         </thead>
         <tbody>
-  {filteredReceipts.length === 0 ? (
-    <tr key="no-receipts">
-      <td colSpan="7" className={styles.noReceiptsMessage}>אין קבלות שמורות</td>
-    </tr>
-  ) : (
-    filteredReceipts.map((receipt, index) => (
-      <tr key={receipt.receipt_id || `receipt-${index}`}>
-        <td>{receipt.store_name}</td>
-        <td>{receipt.product_name}</td>
-        <td>
-  {receipt.price 
-    ? `${receipt.price} ₪` 
-    : "לא הוזן"}
-</td>
-        
-<td>
-  {receipt.purchase_date 
-    ? new Date(receipt.purchase_date).toLocaleDateString() 
-    : "לא הוזן"}
-</td>
-<td>
-  {receipt.warranty_expiration 
-    ? new Date(receipt.warranty_expiration).toLocaleDateString() 
-    : "לא הוזן"}
-</td>
-
-        <td>{receipt.receipt_number? `${receipt.receipt_number} `: "לא הוזן"}</td> 
-    
-        <td>
-        {receipt.image_path ? (
-  <a href={`${receipt.image_path}?alt=media`} target="_blank" rel="noopener noreferrer">
-    הצג קבלה
-  </a>
-) : (
-  <span>אין קבלה</span>
-)}
-
-        </td>
-        <td>{receipt.reminder_days_before ? `${receipt.reminder_days_before} ימים לפני תום האחריות` : "ללא תזכורת"}</td>
-        <td>
-          <div className={styles.actionButtons}>
-            <button
-              className={`${styles.actionButton} ${styles.editButton}`}
-              onClick={() => editReceipt(receipt)}
-            >
-              ערוך קבלה
-            </button>
-            <button
-              className={`${styles.actionButton} ${styles.deleteButton}`}
-              onClick={() => moveToTrash(receipt.receipt_id)}
-            >
-              מחק קבלה
-            </button>
-            {!receipt.reminder_days_before && (
-              <button
-           
-                className={`${styles.actionButton} ${styles.reminderButton}`}
-                onClick={() => editReminder(receipt)}>
-              הוסף תזכורת                             
-              </button>
-            )}
-          </div>
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
-
+          {receipts.length === 0 ? (
+            <tr key="no-receipts">
+              <td colSpan="7" className={styles.noReceiptsMessage}>
+                אין קבלות שמורות
+              </td>
+            </tr>
+          ) : (
+            receipts.map((receipt, index) => (
+              <tr key={receipt.receipt_id || `receipt-${index}`}>
+                <td>{receipt.store_name}</td>
+                <td>{receipt.product_name}</td>
+                <td>{receipt.price ? `${receipt.price} ₪` : "לא הוזן"}</td>
+                <td>
+                  {receipt.purchase_date
+                    ? new Date(receipt.purchase_date).toLocaleDateString()
+                    : "לא הוזן"}
+                </td>
+                <td>
+                  {receipt.warranty_expiration
+                    ? new Date(receipt.warranty_expiration).toLocaleDateString()
+                    : "לא הוזן"}
+                </td>
+                <td>{receipt.receipt_number || "לא הוזן"}</td>
+                <td>
+                  {receipt.image_path ? (
+                    <a
+                      href={`${receipt.image_path}?alt=media`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      הצג קבלה
+                    </a>
+                  ) : (
+                    <span>אין קבלה</span>
+                  )}
+                </td>
+                <td>
+                  {receipt.reminder_days_before
+                    ? `${receipt.reminder_days_before} ימים לפני תום האחריות`
+                    : "ללא תזכורת"}
+                </td>
+                <td>
+                  <div className={styles.actionButtons}>
+                    <button
+                      className={`${styles.actionButton} ${styles.editButton}`}
+                      onClick={() => editReceipt(receipt)}
+                    >
+                      ערוך קבלה
+                    </button>
+                    <button
+                      className={`${styles.actionButton} ${styles.deleteButton}`}
+                      onClick={() => moveToTrash(receipt.receipt_id)}
+                    >
+                      מחק קבלה
+                    </button>
+                    {!receipt.reminder_days_before && (
+                      <button
+                        className={`${styles.actionButton} ${styles.reminderButton}`}
+                        onClick={() => handleOpenReminderModal(receipt)}
+                      >
+                        הוסף תזכורת
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
       </table>
+
+      {/* שימוש בקומפוננטה ReminderModal */}
+      {selectedReceipt && (
+        <ReminderModal
+          open={isReminderModalOpen}
+          onClose={handleCloseReminderModal}
+          onSave={handleSaveReminder}
+          title="הוסף תזכורת" // כותרת למודל
+        />
+      )}
     </div>
   );
 }

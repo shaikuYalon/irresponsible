@@ -1,10 +1,14 @@
 nav {
+    position: fixed; /* הופך את ה-navbar לקבוע */
+    top: 0; /* מגדיר אותו לראש הדף */
+    width: 100%; /* רוחב מלא */
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px;
     background-color: #f0f0f0;
     border-bottom: 2px solid #ddd;
+    z-index: 1000; /* כדי למנוע חפיפה עם תוכן אחר */
 }
 
 nav a {
@@ -54,10 +58,7 @@ button:hover {
     z-index: 1;
 }
 
-
-
 .logout-button:hover {
     background-color: #ff4d4d; /* צבע אדום כהה יותר במעבר עכבר */
     color: white;
 }
-

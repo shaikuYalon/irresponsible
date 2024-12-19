@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 function PrivateRoute({ children }) {
-    const userId = localStorage.getItem("userId");
+    const userId = sessionStorage.getItem("token");
 
     return userId ? children : <Navigate to="/" replace />;
 }

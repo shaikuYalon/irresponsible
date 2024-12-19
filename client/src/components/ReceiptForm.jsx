@@ -1,10 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./ReceiptForm.module.css";
-import axios from "axios";
+import { createRoot } from "react-dom/client";
+import {
+  Box,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+} from "@mui/material";
 import scanImage from "./openAi";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist"; //המרת PDF לתמונה
 import ScanPop from "./ScanPop";
-
+import apiClient from "./ApiClient";
 // הגדר את ה-workerSrc
 GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 
@@ -30,7 +40,6 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   const [shouldScanAfterCapture, setShouldScanAfterCapture] = useState(false); // דגל לסריקה אחרי צילום
   const [showScanDialog, setShowScanDialog] = useState(false); // דיאלוג לסריקה
   const [errors, setErrors] = useState({});
-
   const videoRef = useRef(null); // רפרנס לוידאו של המצלמה
   const fileInputRef = useRef(null); // רפרנס לשדה העלאת הקובץ
 
@@ -62,7 +71,6 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
 
   // אפקט לעדכון הקבלה ב-state אם התקבלו נתונים חדשים ב-receiptData
   useEffect(() => {
-    console.log("State after Update:", receipt);
   }, [receipt]);
 
   // פונקציה לעצירת המצלמה
@@ -192,27 +200,36 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   };
 
   const handleSubmit = () => {
-    const newErrors = {};
-
-    // בדיקת שדות חובה
-    // if (!receipt.storeName.trim()) {
-    //   newErrors.storeName = "שם החנות הוא שדה חובה";
-    // }
-
-    // if (!receipt.productName.trim()) {
-    //   newErrors.productName = "שם המוצר הוא שדה חובה";
-    // }
-
-    // אם יש שגיאות, הצגתן והפסקת השליחה
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+    if (isReminderOnly) {
+      // שליחה של תזכורת בלבד
+      const { reminderDaysBefore, receiptId } = receipt;
+  
+      if (!reminderDaysBefore) {
+        alert("יש לבחור תזכורת");
+        return;
+      }
+  
+      // שליחה של תזכורת בלבד עם מזהה הקבלה
+      onSave({ receiptId, reminderDaysBefore });
+    } else {
+      // שליחה של קבלה מלאה
+      const newErrors = {};
+      if (!receipt.storeName.trim()) {
+        newErrors.storeName = "שם החנות הוא שדה חובה";
+      }
+      if (!receipt.productName.trim()) {
+        newErrors.productName = "שם המוצר הוא שדה חובה";
+      }
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+  
+      setErrors({});
+      onSave(receipt); // שליחה של כל השדות
     }
-
-    setErrors({}); // אפס שגיאות אם הכל תקין
-    onSave(receipt); // קריאה לפונקציה לשמירת הקבלה
   };
-
+  
   const formatDate = (dateTime) => {
     if (!dateTime) return "";
     const datePart = dateTime.split(" ")[0]; // לוקח רק את החלק של התאריך לפני הרווח
@@ -224,69 +241,73 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
     const formData = new FormData();
     formData.append("image", file);
 
+    const CircularProgress = (await import("@mui/material/CircularProgress")).default;
+
+    // יצירת שכבת הספינר עם מחלקת CSS
+    const spinnerContainer = document.createElement("div");
+    spinnerContainer.className = styles.spinnerOverlay; // שימוש בעיצוב מה-CSS
+    document.body.appendChild(spinnerContainer);
+
+    // הכנת מקום לרכיב
+    const spinnerContent = document.createElement("div");
+    spinnerContainer.appendChild(spinnerContent);
+
+    const root = createRoot(spinnerContent); // יצירת root חדש
+
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/upload-image",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
+        root.render(
+            <div style={{ textAlign: "center" }}>
+                <CircularProgress size={60} />
+                <div className={styles.spinnerText}>טוען... אנא המתן</div>
+            </div>
+        );
+
+        // שליחת התמונה לשרת
+        const response = await apiClient.post("/upload-image", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        console.log("Image uploaded successfully:", response.data);
+
+        const imageUrl = response.data.imageUrl;
+        if (!imageUrl) throw new Error("Image URL is missing in the response");
+
+        const scannedData = await scanImage(imageUrl);
+        console.log("Scanned Data from AI:", scannedData);
+
+        if (!scannedData || Object.keys(scannedData).length === 0) {
+            throw new Error("No data returned from AI.");
         }
-      );
 
-      console.log("Image uploaded successfully:", response.data);
+        const parsedScannedData = JSON.parse(scannedData);
 
-      const imageUrl = response.data.imageUrl;
-      if (!imageUrl) throw new Error("Image URL is missing in the response");
-
-      // קריאה ל-OpenAI לסריקת התמונה
-      const scannedData = await scanImage(imageUrl);
-      console.log("Scanned Data from AI:", scannedData); // לוג של scannedData
-
-      if (!scannedData || Object.keys(scannedData).length === 0) {
-        console.error("No data returned from AI.");
-        return;
-      }
-
-      // עדכון ה-state עם הנתונים מ-scannedData
-      setReceipt((prevReceipt) => {
-        console.log("Previous Receipt State:", prevReceipt);
-        console.log("Scanned Data (raw):", scannedData);
-
-        const parsedScannedData = JSON.parse(scannedData); // נתונים לאחר פריסה
-        console.log("Parsed Scanned Data:", parsedScannedData);
-        
-        // יצירת עותק מעודכן של ה-state עם הנתונים החדשים
-        const updatedReceipt = {
-          ...prevReceipt, // שמירה על הערכים הקיימים
-          storeName: parsedScannedData.storeName || "", // עדכון רק אם יש ערך
-          productName: parsedScannedData.productName || "",
-          price: parsedScannedData.price
-          ? parsedScannedData.price.replace(/[^\d.]/g, "")
-          : "",
-                  receiptNumber: parsedScannedData.receiptNumber || "",
-          purchaseDate: parsedScannedData.purchaseDate
-            ? formatDate(parsedScannedData.purchaseDate)
-            : prevReceipt.purchaseDate,
-          warrantyExpiration: parsedScannedData.warrantyEndDate
-            ? formatDate(parsedScannedData.warrantyEndDate)
-            : prevReceipt.warrantyExpiration,
-        };
-
-        console.log("Updated Receipt in State:", updatedReceipt);
-        return updatedReceipt;
-      });
+        setReceipt((prevReceipt) => ({
+            ...prevReceipt,
+            storeName: parsedScannedData.storeName || "",
+            productName: parsedScannedData.productName || "",
+            price: parsedScannedData.price || "",
+            receiptNumber: parsedScannedData.receiptNumber || "",
+            purchaseDate: parsedScannedData.purchaseDate
+                ? formatDate(parsedScannedData.purchaseDate)
+                : prevReceipt.purchaseDate,
+            warrantyExpiration: parsedScannedData.warrantyEndDate
+                ? formatDate(parsedScannedData.warrantyEndDate)
+                : prevReceipt.warrantyExpiration,
+        }));
     } catch (error) {
-      console.error("Error uploading or scanning the image:", error);
+        console.error("Error uploading or scanning the image:", error.message);
     } finally {
-      setIsScanning(false);
-      setIsCameraOpen(false); // סיום תהליך המצלמה
+        root.unmount(); // הסרת הרכיב בצורה תקינה
+        document.body.removeChild(spinnerContainer); // הסרת האלמנט מה-DOM
     }
-  };
+};
 
-  return (
+
+
+return (
     <div className="formContainerWrapper">
       <div className={styles.formContainer}>
-        <h3>{isReminderOnly ? "עריכת תזכורת" : "הוספת/עריכת קבלה"}</h3>
+        <h3>{isReminderOnly ? "עריכת תזכורת" : "הוספת קבלה"}</h3>
 
         {isReminderOnly ? (
           // הצגת שדה התזכורת בלבד במצב של עריכת תזכורת
@@ -323,7 +344,14 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 {isScanning ? "סורק..." : "מלא פרטים מסריקה"}
               </button>
             </div>
-
+            <label htmlFor="file-upload">העלאת קובץ קבלה עם אפשרות סריקה:</label>
+              <input
+                type="file"
+                id="file-upload"
+                name="image"
+                onChange={handleFileUpload}
+                ref={fileInputRef}
+              />
             <label>
               שם החנות:
               <input
@@ -355,7 +383,7 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
             <label>
               עלות המוצר:
               <input
-                type="text" // שמירה על type="text" כדי להסיר את החיצים
+                type="text" 
                 name="price"
                 value={receipt.price || ""}
                 onChange={(e) => {
@@ -429,15 +457,9 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
                 placeholder="הכנס מספר קבלה"
               />
             </label>
+            
             <div className={styles.fileUploadSection}>
-              <label htmlFor="file-upload">העלאת קובץ קבלה:</label>
-              <input
-                type="file"
-                id="file-upload"
-                name="image"
-                onChange={handleFileUpload}
-                ref={fileInputRef}
-              />
+              <br />
               {receipt.image && (
                 <button type="button" onClick={handleRemoveFile}>
                   מחק קובץ
@@ -516,4 +538,5 @@ function ReceiptForm({ onSave, categories, receiptData, isReminderOnly }) {
   );
 }
 
-export default ReceiptForm;
+export default ReceiptForm;  
+  

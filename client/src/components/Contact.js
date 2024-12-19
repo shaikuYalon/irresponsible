@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './Contact.module.css';
-
+import axios from 'axios';
 function Contact() {
     const [formData, setFormData] = useState({
         name: '',
@@ -16,13 +16,10 @@ function Contact() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/contact', { // כתובת מלאה של השרת
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+            const response = await axios.post('http://localhost:5000/contact', formData); // שימוש ב-apiClient
+           
 
-            if (response.ok) {
+            if (response.status === 200) {
                 setMessage('ההודעה נשלחה בהצלחה!');
                 setFormData({ name: '', email: '', message: '' }); // ניקוי הטופס
             } else {

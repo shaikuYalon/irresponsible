@@ -1,35 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {jwtDecode} from "jwt-decode"; // פענוח טוקן
 import "./Navbar.css";
 
 function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [userRole, setUserRole] = useState(null); // ניהול role ב-state
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // קריאת ה-role מה-localStorage
-    const role = localStorage.getItem("role");
-    setUserRole(role);
-
-    const handleStorageChange = () => {
-      const updatedRole = localStorage.getItem("role");
-      setUserRole(updatedRole);
-    };
-
-    // הקשבה לשינויים ב-localStorage
-    window.addEventListener("storage", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
+    const token = sessionStorage.getItem("token");
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        setUserRole(decodedToken.role); // עדכון ה-role מתוך הטוקן
+      } catch (error) {
+        console.error("Invalid token:", error);
+        handleLogoutClick(); // התנתקות במקרה של טוקן לא תקין
+      }
+    }
   }, []);
 
   const handleLogoutClick = () => {
-    localStorage.removeItem("userId");
-    localStorage.removeItem("username");
-    localStorage.removeItem("role");
-    window.dispatchEvent(new Event("storage")); // עדכון ה-App על השינוי
-    navigate("/");
+    sessionStorage.clear(); // ניקוי כל הנתונים מה-sessionStorage
+    setUserRole(null);
+    navigate("/"); // חזרה לדף הבית
   };
 
   const toggleNotifications = () => {
@@ -38,7 +33,7 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      {/* כפתור בית - מותאם לפי ה-role */}
+      {/* כפתור בית */}
       <Link
         className="navbar-link"
         to={userRole === "admin" ? "/admin-dashboard" : "/dashboard"}
@@ -46,8 +41,8 @@ function Navbar() {
         בית
       </Link>
 
-      {/* כפתור הודעות מערכת - יופיע רק אם המשתמש מחובר */}
-      {localStorage.getItem("userId") && (
+      {/* כפתור הודעות מערכת */}
+      {sessionStorage.getItem("token") && (
         <div className="notification-container" style={{ position: "relative" }}>
           <button className="navbar-link" onClick={toggleNotifications}>
             הודעות מערכת
@@ -60,8 +55,8 @@ function Navbar() {
         </div>
       )}
 
-      {/* כפתור התנתקות - יופיע רק אם המשתמש מחובר */}
-      {localStorage.getItem("userId") && (
+      {/* כפתור התנתקות */}
+      {sessionStorage.getItem("token") && (
         <button
           className="navbar-button logout-button"
           onClick={handleLogoutClick}

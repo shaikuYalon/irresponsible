@@ -1,7 +1,8 @@
-// firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getStorage } from "firebase/storage";
+
 const apiKey = process.env.FIERBASE_KEY
+
 const firebaseConfig = {
     apiKey: `${apiKey}`,
     authDomain: "irresponsible-5aeb9.firebaseapp.com",

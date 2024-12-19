@@ -31,7 +31,9 @@ function AdminDashboard() {
   const [showUsers, setShowUsers] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
+   
 
+  const token = sessionStorage.getItem("token");
   // מיפוי שמות עמודות לכותרות בעברית
   const columnHeadersMapping = {
     category: {
@@ -80,7 +82,11 @@ function AdminDashboard() {
       setLoading(true);
       try {
         const response = await axios.get(
-          "http://localhost:5001/api/admin/users"
+          "http://localhost:5001/api/admin/users",{
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
         );
         setUsers(response.data.users || []);
         setError("");

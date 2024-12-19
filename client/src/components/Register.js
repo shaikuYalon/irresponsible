@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import styles from './Register.module.css';
+import apiClient from './ApiClient';
 
 function Register() {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', username: '', email: '', password: '' });
@@ -17,17 +17,18 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', formData);
+            const response = await apiClient.post('/auth/register', formData); // שימוש ב-apiClient
             const { user_id, username } = response.data.user;
-            
+    
             localStorage.setItem('userId', user_id);
             localStorage.setItem('username', username);
-            
+    
             navigate('/dashboard');
         } catch (error) {
             alert('Error registering: ' + (error.response?.data?.message || error.message));
         }
     };
+    
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import {jwtDecode} from 'jwt-decode'; // ספרייה לפענוח טוקן
 import styles from './HomePage.module.css';
 
 function HomePage() {
@@ -10,23 +11,28 @@ function HomePage() {
     };
 
     const goToLogin = () => {
-        let user = null;
+        let token = null;
+        let userRole = null;
 
         try {
-            user = JSON.parse(localStorage.getItem('user')); // שליפת פרטי המשתמש מה-localStorage
+            token = sessionStorage.getItem('token'); // שליפת הטוקן מ-sessionStorage
+            if (token) {
+                const decodedToken = jwtDecode(token); // פענוח הטוקן
+                userRole = decodedToken.role; // שליפת role מתוך הטוקן
+            }
         } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
+            console.error('Error decoding token:', error);
         }
 
-        if (user && user.role) {
+        if (userRole) {
             // בדיקה של ה-role והפניה בהתאם
-            if (user.role === 'admin') {
+            if (userRole === 'admin') {
                 navigate('/admin-dashboard'); // דף מנהל
             } else {
                 navigate('/dashboard'); // דף רגיל למשתמש
             }
         } else {
-            navigate('/login'); // דף התחברות אם אין משתמש
+            navigate('/login'); // דף התחברות אם אין טוקן או role
         }
     };
 

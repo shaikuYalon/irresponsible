@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import styles from "./UsersAnalysis.module.css";
+import apiClient from "../ApiClient";
 
 const UsersAnalysis = () => {
   const [analysisData, setAnalysisData] = useState(null);
